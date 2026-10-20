@@ -7,6 +7,7 @@ import { errorHandler, notFound } from "./http/errors.js";
 import { requireProxySignature } from "./middleware/proxySignature.js";
 import { adminRouter } from "./routes/admin.js";
 import { authRouter } from "./routes/auth.js";
+import { catalogRouter } from "./routes/catalog.js";
 import { demoRouter } from "./routes/demo.js";
 import { healthRouter } from "./routes/health.js";
 
@@ -27,6 +28,7 @@ export function createApp({ config, db, now = () => new Date() }: AppDeps): Expr
   app.use(authRouter(config, db, now));
   app.use(demoRouter(config, db, now));
   app.use(adminRouter(config, db, now));
+  app.use(catalogRouter(config, db, now));
 
   app.use(notFound);
   app.use(errorHandler);
