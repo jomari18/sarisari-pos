@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { hash } from "@node-rs/argon2";
+import { hashSecret } from "../../src/services/hashing.js";
 import type { Db } from "../../src/db.js";
 
 export const OWNER_PASSWORD = "owner-pass-1234";
@@ -25,7 +25,7 @@ export async function seedStore(db: Db, opts: { code?: string; expiresAt?: Date;
       role: "OWNER",
       username: `mayari.${code}`,
       displayName: "Mang Ben",
-      secretHash: await hash(OWNER_PASSWORD),
+      secretHash: await hashSecret(OWNER_PASSWORD),
       secretKind: "PASSWORD",
     },
   });
@@ -35,7 +35,7 @@ export async function seedStore(db: Db, opts: { code?: string; expiresAt?: Date;
       role: "BANTAY",
       username: `nena.${code}`,
       displayName: "Nena",
-      secretHash: await hash(BANTAY_PIN),
+      secretHash: await hashSecret(BANTAY_PIN),
       secretKind: "PIN",
     },
   });
