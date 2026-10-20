@@ -3,10 +3,11 @@ import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { clientIp } from "../src/middleware/clientIp.js";
+import { testDb } from "./support/db.js";
 import { signNetlify, testEnv } from "./support/signing.js";
 
 const config = loadConfig({ ...testEnv });
-const app = createApp({ config });
+const app = createApp({ config, db: testDb() });
 
 describe("health", () => {
   it("answers without a proxy signature and allows only the site origin", async () => {

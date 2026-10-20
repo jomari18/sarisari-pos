@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: sari
+      POSTGRES_PASSWORD: sari
+      POSTGRES_DB: sari_test
+    ports:
+      # Local only: the database is never reachable from the network.
+      - "127.0.0.1:55433:5432"
+    volumes:
+      - ./tools/db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sari -d sari_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

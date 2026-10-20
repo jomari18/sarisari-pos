@@ -2,11 +2,12 @@ import cookieParser from "cookie-parser";
 import express, { type Express } from "express";
 import helmet from "helmet";
 import type { Config } from "./config.js";
+import type { Db } from "./db.js";
 import { AppError, errorHandler, notFound } from "./http/errors.js";
 import { requireProxySignature } from "./middleware/proxySignature.js";
 import { healthRouter } from "./routes/health.js";
 
-export type AppDeps = { config: Config; now?: () => Date };
+export type AppDeps = { config: Config; db: Db; now?: () => Date };
 
 export function createApp({ config }: AppDeps): Express {
   const app = express();

@@ -9,6 +9,7 @@ export default defineConfig({
   test: {
     name: "api",
     include: ["test/**/*.test.ts"],
+    globalSetup: ["test/globalSetup.ts"],
     // Database tests share one local database, so files run one at a time.
     fileParallelism: false,
   },
