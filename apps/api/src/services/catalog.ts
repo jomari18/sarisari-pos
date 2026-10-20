@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Db } from "../db.js";
 import type { Category, Product } from "../generated/prisma/client.js";
 import { AppError } from "../http/errors.js";
+import { containsPattern } from "./search.js";
 import type { AuthUser } from "./tokens.js";
 
 /** Cost (and so profit) is for the owner only: a bantay's view has no `costCentavos` key at all (spec 7.4). */
@@ -69,8 +70,7 @@ export async function listProducts(db: Db, user: AuthUser, query: ProductQuery):
 
 /** Case- and accent-insensitive match on name or brand: "pina" finds "Piña". */
 async function searchProductIds(db: Db, storeId: string, search: string): Promise<string[]> {
-  // ILIKE reads % and _ as wildcards, so a typed % or _ is escaped to match itself.
-  const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
+  const pattern = containsPattern(search);
   const rows = await db.$queryRaw<{ id: string }[]>`
     SELECT "id" FROM "Product"
     WHERE "storeId" = ${storeId}::uuid

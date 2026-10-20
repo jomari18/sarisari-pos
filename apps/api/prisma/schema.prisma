@@ -230,6 +230,8 @@ model StockMovement {
   note       String?
   stockAfter Int
   createdAt  DateTime       @default(now()) @db.Timestamptz(3)
+  /// Insertion order, for rows recorded at the same instant.
+  seq        Int            @default(autoincrement())
 
   @@index([storeId, productId, createdAt])
 }
@@ -252,6 +254,8 @@ model UtangEntry {
   note           String?
   balanceAfter   Int
   createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+  /// Insertion order, for entries recorded at the same instant.
+  seq            Int            @default(autoincrement())
 
   @@index([storeId, customerId, createdAt])
 }

@@ -1,5 +1,5 @@
 // Shapes the API returns. Times are ISO strings; money is integer centavos.
-import type { PaymentMethod, Role, SaleFlag } from "./enums.js";
+import type { PaymentMethod, Role, SaleFlag, UtangKind } from "./enums.js";
 import type { ErrorCode } from "./errors.js";
 
 export type StoreView = { id: string; code: string; name: string; expiresAt: string };
@@ -35,6 +35,21 @@ export type CatalogCustomer = {
 };
 
 export type CustomerView = CatalogCustomer & { oldestUnpaidDays: number | null };
+
+/** One line of a suki's utang ledger. Charges are positive, payments negative; a charge links to its sale. */
+export type LedgerEntryView = {
+  id: string;
+  kind: UtangKind;
+  amountCentavos: number;
+  method: PaymentMethod | null;
+  sale: { id: string; receiptNo: number } | null;
+  note: string | null;
+  balanceAfter: number;
+  createdAt: string;
+  user: { id: string; displayName: string };
+};
+
+export type CustomerLedger = { customer: CustomerView; entries: LedgerEntryView[] };
 
 export type SaleLineView = {
   productId: string | null;
