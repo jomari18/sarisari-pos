@@ -201,6 +201,8 @@ model SaleItem {
   id                String   @id @default(uuid()) @db.Uuid
   saleId            String   @db.Uuid
   sale              Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  /// Position on the receipt, from 0, in the order the items were rung up.
+  line              Int      @default(0)
   /// Null for a custom item typed in by the bantay.
   productId         String?  @db.Uuid
   product           Product? @relation(fields: [productId], references: [id], onDelete: SetNull)

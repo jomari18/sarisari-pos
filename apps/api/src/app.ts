@@ -10,6 +10,7 @@ import { authRouter } from "./routes/auth.js";
 import { catalogRouter } from "./routes/catalog.js";
 import { demoRouter } from "./routes/demo.js";
 import { healthRouter } from "./routes/health.js";
+import { salesRouter } from "./routes/sales.js";
 
 export type AppDeps = { config: Config; db: Db; now?: () => Date };
 
@@ -29,6 +30,7 @@ export function createApp({ config, db, now = () => new Date() }: AppDeps): Expr
   app.use(demoRouter(config, db, now));
   app.use(adminRouter(config, db, now));
   app.use(catalogRouter(config, db, now));
+  app.use(salesRouter(config, db, now));
 
   app.use(notFound);
   app.use(errorHandler);

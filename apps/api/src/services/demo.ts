@@ -175,8 +175,9 @@ async function insertHistory(tx: Tx, storeId: string, users: Record<Role, string
   );
   await inBatches(
     data.sales.flatMap((s, i) =>
-      s.lines.map((line) => ({
+      s.lines.map((line, position) => ({
         saleId: saleIds[i]!,
+        line: position,
         productId: productIds[line.product]!,
         name: line.name,
         quantity: line.quantity,
