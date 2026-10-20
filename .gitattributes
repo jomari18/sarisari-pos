@@ -1,0 +1,3 @@
+# LF everywhere, so files built into the Docker image and Prisma migration checksums are the same
+# from a Windows checkout, in CI and on Render.
+* text=auto eol=lf

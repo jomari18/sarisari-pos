@@ -1,0 +1,17 @@
+# Only what the API image needs reaches the Docker build. Dependencies and the Prisma client are
+# installed and generated inside the image, never copied from a developer machine.
+**/node_modules
+**/dist
+**/coverage
+**/*.log
+**/.env
+**/.env.*
+!**/.env.example
+apps/api/src/generated
+.git
+.github
+.superpowers
+docs
+e2e
+playwright-report
+test-results

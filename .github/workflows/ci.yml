@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, typecheck and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: sari
+          POSTGRES_PASSWORD: sari
+          POSTGRES_DB: sari_test
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd "pg_isready -U sari -d sari_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      TEST_DATABASE_URL: postgres://sari:sari@127.0.0.1:55433/sari_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Apply migrations
+        working-directory: apps/api
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+        run: npx prisma migrate deploy
+      - run: npm run test:api
+
+  image:
+    name: API Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: sari
+          POSTGRES_PASSWORD: sari
+          POSTGRES_DB: sari_test
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd "pg_isready -U sari -d sari_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build
+        run: docker build -f apps/api/Dockerfile -t sari-api:ci .
+      # The container migrates an empty database and starts, as it will on Render. CI-only values.
+      - name: Smoke test
+        run: |
+          docker run -d --name sari-api --network host \
+            -e DATABASE_URL=postgres://sari:sari@127.0.0.1:55433/sari_test \
+            -e JWT_SECRET=ci-only-jwt-secret-0123456789abcdefghij \
+            -e PROXY_SIGNING_SECRET=ci-only-proxy-signing-secret-0123456789 \
+            -e CLEANUP_SECRET=ci-only-cleanup-secret-0123456789abcdef \
+            -e IP_HASH_SALT=ci-only-ip-hash-salt-0123456789abcdefgh \
+            -e SITE_ORIGIN=http://localhost:4173 \
+            sari-api:ci
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/api/health; then
+              docker logs sari-api
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs sari-api
+          exit 1
+      - name: Save image for the E2E job
+        run: docker save sari-api:ci | gzip -1 > sari-api.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sari-api-image
+          path: sari-api.tar.gz
+          retention-days: 1
+          compression-level: 0

@@ -15,3 +15,23 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    # Local-only values. Real secrets live in Render, Netlify and GitHub settings, never in the repo.
+    environment:
+      DATABASE_URL: postgres://sari:sari@db:5432/sari_dev
+      JWT_SECRET: local-only-jwt-secret-0123456789abcdef
+      PROXY_SIGNING_SECRET: local-only-proxy-signing-secret-01234567
+      CLEANUP_SECRET: local-only-cleanup-secret-0123456789abcd
+      IP_HASH_SALT: local-only-ip-hash-salt-0123456789abcdef
+      SITE_ORIGIN: http://localhost:5173
+    ports:
+      - "127.0.0.1:8080:8080"
+    # Forwards Ctrl+C and `docker compose down` to the server instead of waiting for the kill timeout.
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
