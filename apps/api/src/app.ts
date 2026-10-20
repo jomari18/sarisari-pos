@@ -3,13 +3,14 @@ import express, { type Express } from "express";
 import helmet from "helmet";
 import type { Config } from "./config.js";
 import type { Db } from "./db.js";
-import { AppError, errorHandler, notFound } from "./http/errors.js";
+import { errorHandler, notFound } from "./http/errors.js";
 import { requireProxySignature } from "./middleware/proxySignature.js";
+import { authRouter } from "./routes/auth.js";
 import { healthRouter } from "./routes/health.js";
 
 export type AppDeps = { config: Config; db: Db; now?: () => Date };
 
-export function createApp({ config }: AppDeps): Express {
+export function createApp({ config, db, now = () => new Date() }: AppDeps): Express {
   const app = express();
   app.disable("x-powered-by");
   app.use(helmet());
@@ -21,10 +22,7 @@ export function createApp({ config }: AppDeps): Express {
   app.use(express.json({ limit: "64kb" }));
   app.use(cookieParser());
 
-  // Replaced by the auth routes in Task 8.
-  app.get("/api/me", () => {
-    throw new AppError("unauthenticated", "Please sign in.");
-  });
+  app.use(authRouter(config, db, now));
 
   app.use(notFound);
   app.use(errorHandler);
