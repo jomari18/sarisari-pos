@@ -1,11 +1,11 @@
-import { SaleInput, manilaDate, manilaDayStart } from "@sari/shared";
+import { SaleInput, VoidInput, manilaDate, manilaDayStart } from "@sari/shared";
 import { Router } from "express";
 import { z } from "zod";
 import type { Config } from "../config.js";
 import type { Db } from "../db.js";
 import { parseBody, routeParam } from "../http/parse.js";
-import { requireAuth } from "../middleware/auth.js";
-import { createSale, getSale, listSales, syncSales } from "../services/sales.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
+import { createSale, getSale, listSales, syncSales, voidSale } from "../services/sales.js";
 
 const isManilaDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date) && manilaDate(manilaDayStart(date)) === date;
 
@@ -37,6 +37,10 @@ export function salesRouter(config: Config, db: Db, now: () => Date): Router {
   });
   router.get("/api/sales/:id", auth, async (req, res) => {
     res.json(await getSale(db, req.user!, routeParam(req, "id")));
+  });
+  router.post("/api/sales/:id/void", auth, requireRole("OWNER"), async (req, res) => {
+    const { reason } = parseBody(VoidInput, req.body);
+    res.json(await voidSale(db, req.user!, routeParam(req, "id"), reason, now()));
   });
 
   return router;

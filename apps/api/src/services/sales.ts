@@ -185,6 +185,48 @@ async function recordSale(tx: Tx, user: AuthUser, input: SaleInput, total: numbe
   }
 }
 
+const alreadyVoided = () => new AppError("already_voided", "This sale was already voided.");
+
+/**
+ * Spec 6.7: the owner voids a sale once, with a reason. Stock comes back with VOID movements (not for
+ * custom items) and an utang charge is reversed with a VOID ledger entry. The sale stays visible.
+ */
+export async function voidSale(db: Db, user: AuthUser, saleId: string, reason: string, now: Date): Promise<SaleView> {
+  if (!z.uuid().safeParse(saleId).success) throw saleNotFound();
+  const { storeId } = user;
+  const sale = await db.sale.findFirst({ where: { id: saleId, storeId }, include: { items: { orderBy: { line: "asc" } } } });
+  if (!sale) throw saleNotFound();
+  if (sale.voidedAt) throw alreadyVoided();
+
+  await db.$transaction(
+    async (tx) => {
+      // Only one void can claim the sale, even when the owner taps twice.
+      const { count } = await tx.sale.updateMany({
+        where: { id: sale.id, voidedAt: null },
+        data: { voidedAt: now, voidReason: reason, voidedById: user.userId },
+      });
+      if (count === 0) throw alreadyVoided();
+
+      for (const item of sale.items) {
+        if (!item.productId) continue;
+        const [row] = await tx.$queryRaw<{ stock: number }[]>`
+          UPDATE "Product" SET "stock" = "stock" + ${item.quantity} WHERE "id" = ${item.productId}::uuid RETURNING "stock"`;
+        await tx.stockMovement.create({
+          data: { storeId, productId: item.productId, change: item.quantity, reason: "VOID", saleId: sale.id, userId: user.userId, note: reason, stockAfter: row!.stock, createdAt: now },
+        });
+      }
+      if (sale.method === "UTANG" && sale.customerId) {
+        const customer = await tx.customer.update({ where: { id: sale.customerId }, data: { balanceCentavos: { decrement: sale.totalCentavos } } });
+        await tx.utangEntry.create({
+          data: { storeId, customerId: sale.customerId, kind: "VOID", amountCentavos: -sale.totalCentavos, saleId: sale.id, userId: user.userId, note: reason, balanceAfter: customer.balanceCentavos, createdAt: now },
+        });
+      }
+    },
+    { maxWait: 5_000, timeout: 15_000 },
+  );
+  return getSale(db, user, saleId);
+}
+
 export type SalesQuery = { date?: string; cashierId?: string };
 
 /** Spec 8.4: the owner sees any Manila day and cashier; a bantay sees only their own sales of today. */
