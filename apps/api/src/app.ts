@@ -5,7 +5,9 @@ import type { Config } from "./config.js";
 import type { Db } from "./db.js";
 import { errorHandler, notFound } from "./http/errors.js";
 import { requireProxySignature } from "./middleware/proxySignature.js";
+import { adminRouter } from "./routes/admin.js";
 import { authRouter } from "./routes/auth.js";
+import { demoRouter } from "./routes/demo.js";
 import { healthRouter } from "./routes/health.js";
 
 export type AppDeps = { config: Config; db: Db; now?: () => Date };
@@ -23,6 +25,8 @@ export function createApp({ config, db, now = () => new Date() }: AppDeps): Expr
   app.use(cookieParser());
 
   app.use(authRouter(config, db, now));
+  app.use(demoRouter(config, db, now));
+  app.use(adminRouter(config, db, now));
 
   app.use(notFound);
   app.use(errorHandler);
