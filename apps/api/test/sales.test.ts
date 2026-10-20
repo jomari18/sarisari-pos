@@ -8,6 +8,7 @@ import { loadConfig } from "../src/config.js";
 import { signAccessToken } from "../src/services/tokens.js";
 import { resetDb, testDb } from "./support/db.js";
 import { seedStore, type TestStore } from "./support/factories.js";
+import { saleBodies, type Item } from "./support/sales.js";
 import { signNetlify, testEnv } from "./support/signing.js";
 
 const MINUTE = 60_000;
@@ -32,14 +33,7 @@ beforeEach(async () => {
   bantay = await signAccessToken({ userId: t.bantay.id, storeId: t.store.id, role: "BANTAY" }, config.JWT_SECRET, clock);
 });
 
-type Item = { productId: string; quantity: number; unitPriceCentavos: number } | { custom: { name: string; unitPriceCentavos: number }; quantity: number };
-type Payment = { method: "CASH"; tenderedCentavos: number } | { method: "GCASH"; gcashRef?: string } | { method: "UTANG"; customerId: string };
-
-const priceOf = (item: Item) => ("custom" in item ? item.custom.unitPriceCentavos : item.unitPriceCentavos);
-function saleBody(items: Item[], payment: Payment = { method: "CASH", tenderedCentavos: 100_000 }, soldAt = clock) {
-  const totalCentavos = items.reduce((sum, item) => sum + item.quantity * priceOf(item), 0);
-  return { id: randomUUID(), soldAt: soldAt.toISOString(), items, totalCentavos, payment };
-}
+const saleBody = saleBodies(clock);
 
 async function call(method: "get" | "post", path: string, token: string, body?: object) {
   const req = request(app)[method](path).set("x-nf-sign", await signNetlify(config.PROXY_SIGNING_SECRET)).set("Authorization", `Bearer ${token}`);

@@ -1,4 +1,4 @@
-import { manilaDate, manilaDayStart, type SaleInput, type SaleView } from "@sari/shared";
+import { SaleInput, manilaDate, manilaDayStart, type ErrorCode, type SaleView, type SyncResult } from "@sari/shared";
 import { z } from "zod";
 import type { Db } from "../db.js";
 import { Prisma, type Product } from "../generated/prisma/client.js";
@@ -39,6 +39,37 @@ export async function createSale(db: Db, user: AuthUser, input: SaleInput, mode:
     return { sale: winner, duplicate: true };
   }
   return { sale: (await storedSale(db, user, input.id))!, duplicate: false };
+}
+
+/**
+ * Offline sync (spec 9): applies queued sales in order, each in its own transaction, and never refuses
+ * one for stock or credit limits. A sale that cannot be recorded, even a malformed one, comes back
+ * `invalid` with the reason while the rest of the queue still goes through.
+ */
+export async function syncSales(db: Db, user: AuthUser, batch: unknown[], now: Date): Promise<SyncResult[]> {
+  const results: SyncResult[] = [];
+  for (const entry of batch) {
+    const parsed = SaleInput.safeParse(entry);
+    if (!parsed.success) {
+      results.push(invalid(idOf(entry), "invalid_input", parsed.error.issues[0]?.message ?? "Some details of this sale are not valid."));
+      continue;
+    }
+    try {
+      const { sale, duplicate } = await createSale(db, user, parsed.data, "sync", now);
+      results.push({ id: sale.id, status: duplicate ? "duplicate" : "accepted", receiptNo: sale.receiptNo ?? undefined, flags: sale.flags });
+    } catch (err) {
+      if (!(err instanceof AppError)) throw err;
+      results.push(invalid(parsed.data.id, err.code, err.message));
+    }
+  }
+  return results;
+}
+
+const invalid = (id: string, code: ErrorCode, message: string): SyncResult => ({ id, status: "invalid", flags: [], error: { code, message } });
+
+function idOf(entry: unknown): string {
+  const id = typeof entry === "object" && entry !== null ? (entry as { id?: unknown }).id : undefined;
+  return typeof id === "string" ? id : "";
 }
 
 /** The stored sale with this id. An id already used by another store is refused without revealing that sale. */
