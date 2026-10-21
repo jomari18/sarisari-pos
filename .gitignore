@@ -9,3 +9,6 @@ test-results/
 !.env.example
 apps/api/src/generated/
 .DS_Store
+
+# Local editor and agent tooling
+.claude/

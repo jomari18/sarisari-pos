@@ -1,4 +1,5 @@
 import js from "@eslint/js";
+import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
@@ -12,4 +13,6 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
   },
+  // The web app's components follow the Rules of Hooks.
+  { files: ["apps/web/**/*.{ts,tsx}"], ...reactHooks.configs.flat["recommended-latest"] },
 );

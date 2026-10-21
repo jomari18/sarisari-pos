@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens (spec 11.2). Dark is the default; public/theme-init.js applies a saved choice before the
+ * page paints. Every text colour reaches WCAG AA on --bg, --surface and --raised in its theme, which
+ * test/tokens.test.ts checks.
+ */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111315;
+  --surface: #292c2d;
+  --raised: #3d4142;
+  --text: #ffffff;
+  --muted: #adb0b2;
+  --accent: #93c5fd;
+  --accent-ink: #111315;
+  --success: #50cd89;
+  --danger: #ff8a8a;
+  --warning: #f5c451;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --raised: #eef0f3;
+  --text: #111315;
+  --muted: #5b6066;
+  --accent: #2563eb;
+  --accent-ink: #ffffff;
+  --success: #147a3a;
+  --danger: #b91c1c;
+  --warning: #8a5206;
+}
+
+/* Tailwind utilities read the tokens at runtime, so switching data-theme restyles everything. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --radius-card: 12px;
+  --radius-control: 10px;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
