@@ -1,8 +1,3 @@
-/** Stands in for a screen that a later step of the plan builds. The top bar already shows its title. */
-export function ScreenPlaceholder() {
-  return <section className="rounded-card bg-surface p-6 text-muted">This screen is on its way.</section>;
-}
-
 /** Stands in for a page outside the signed-in app (landing, login, credits) until its step is built. */
 export function PagePlaceholder({ title }: { title: string }) {
   return (

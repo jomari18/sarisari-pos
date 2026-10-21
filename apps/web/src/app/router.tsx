@@ -3,26 +3,31 @@ import { Navigate, Outlet, createBrowserRouter, type RouteObject } from "react-r
 import { RouterProvider } from "react-router/dom";
 import { useSession } from "../auth/session";
 import { LoginPage } from "../features/auth/LoginPage";
-import { DemoLoginsCard } from "../features/demo/DemoLoginsCard";
+import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { CategoriesPage } from "../features/inventory/CategoriesPage";
 import { CountPage } from "../features/inventory/CountPage";
 import { EditProductPage, NewProductPage } from "../features/inventory/ProductForm";
 import { ProductsPage } from "../features/inventory/ProductsPage";
 import { RestockPage } from "../features/inventory/RestockPage";
 import { PosScreen } from "../features/pos/PosScreen";
+import { ReportsPage } from "../features/reports/ReportsPage";
+import { ReviewPage } from "../features/review/ReviewPage";
+import { SalesPage } from "../features/sales/SalesPage";
+import { SettingsPage } from "../features/settings/SettingsPage";
+import { MyShiftPage } from "../features/shift/MyShiftPage";
+import { StaffPage } from "../features/staff/StaffPage";
 import { SukiLedgerPage } from "../features/suki/SukiLedgerPage";
 import { SukiListPage } from "../features/suki/SukiListPage";
 import { AppShell, type RouteHandle } from "./AppShell";
-import { PagePlaceholder, ScreenPlaceholder } from "./Placeholder";
+import { PagePlaceholder } from "./Placeholder";
 import { Providers } from "./Providers";
 
 const page = (path: string, title: string, element: ReactNode): RouteObject => ({ path, element, handle: { title } satisfies RouteHandle });
-const screen = (path: string, title: string) => page(path, title, <ScreenPlaceholder />);
 
 /** The owner lands on the dashboard; a bantay goes straight to the POS. */
 function AppHome() {
   const session = useSession();
-  return session?.user.role === "OWNER" ? <ScreenPlaceholder /> : <Navigate to="/app/pos" replace />;
+  return session?.user.role === "OWNER" ? <DashboardPage /> : <Navigate to="/app/pos" replace />;
 }
 
 /** Owner screens (spec 7.4). The API refuses a bantay anyway; this keeps them out of screens they cannot use. */
@@ -40,33 +45,23 @@ const pages: RouteObject[] = [
     children: [
       { index: true, element: <AppHome />, handle: { title: "Dashboard" } satisfies RouteHandle },
       { path: "pos", element: <PosScreen />, handle: { title: "POS" } satisfies RouteHandle },
-      screen("sales", "Sales"),
       page("suki", "Suki", <SukiListPage />),
       page("suki/:id", "Suki ledger", <SukiLedgerPage />),
-      screen("shift", "My shift"),
-      {
-        path: "settings",
-        // Task 28 builds the rest of Settings; the demo logins card is needed from the first sign-in.
-        element: (
-          <div className="flex flex-col gap-6">
-            <DemoLoginsCard />
-            <ScreenPlaceholder />
-          </div>
-        ),
-        handle: { title: "Settings" } satisfies RouteHandle,
-      },
+      page("shift", "My shift", <MyShiftPage />),
+      page("settings", "Settings", <SettingsPage />),
       {
         element: <RequireOwner />,
         children: [
+          page("sales", "Sales", <SalesPage />),
           page("products", "Products", <ProductsPage />),
           page("products/new", "New product", <NewProductPage />),
           page("products/:id", "Edit product", <EditProductPage />),
           page("categories", "Categories", <CategoriesPage />),
           page("stock/restock", "Restock", <RestockPage />),
           page("stock/count", "Stock count", <CountPage />),
-          screen("reports", "Reports"),
-          screen("review", "Needs review"),
-          screen("staff", "Staff"),
+          page("reports", "Reports", <ReportsPage />),
+          page("review", "Needs review", <ReviewPage />),
+          page("staff", "Staff", <StaffPage />),
         ],
       },
     ],

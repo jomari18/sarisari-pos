@@ -1,6 +1,6 @@
 import { ProductInput, ProductPatch, parsePesos, type CategoryView, type ProductView } from "@sari/shared";
 import { useRef, useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { ApiError, api } from "../../api/client";
 import { Field, inputClass } from "../../components/Field";
 import { LoadProblem, Loading } from "../../components/LoadProblem";
@@ -80,11 +80,13 @@ type Props = {
   onReload?: () => void;
   /** What the last action did ("Saved …"); gone once the next save starts. */
   notice?: string | null;
+  /** Fields filled in for a new product, e.g. from a custom item in "Needs review". */
+  prefill?: Partial<Values>;
 };
 
 /** Add or edit a product (reference "Add Inventory"): checked with the shared schemas before it is sent. */
-export function ProductForm({ product, categories, onSaved, onReload, notice: lastNotice = null }: Props) {
-  const [values, setValues] = useState<Values>(() => (product ? valuesOf(product) : BLANK));
+export function ProductForm({ product, categories, onSaved, onReload, notice: lastNotice = null, prefill = {} }: Props) {
+  const [values, setValues] = useState<Values>(() => (product ? valuesOf(product) : { ...BLANK, ...prefill }));
   const [notice, setNotice] = useState(lastNotice);
   const [errors, setErrors] = useState<Errors>({});
   const [problem, setProblem] = useState<string | null>(null);
@@ -236,9 +238,14 @@ export function ProductForm({ product, categories, onSaved, onReload, notice: la
 }
 
 /** `/app/products/new`. A new product starts with no stock; restocking puts it on the shelf. */
+/** `?name=…&price=…` fill in a new product, so a custom item from "Needs review" becomes a product in one step (spec 6.6). */
+const PREFILLED = ["name", "price"] as const;
+
 export function NewProductPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const categories = useCategories();
+  const prefill = Object.fromEntries(PREFILLED.flatMap((field) => (params.get(field) ? [[field, params.get(field)!]] : [])));
   const productChanged = useProductChanged();
   if (categories.isPending) return <Loading what="the categories" />;
   if (categories.isError) return <LoadProblem error={categories.error} retry={categories.refetch} />;
@@ -246,6 +253,7 @@ export function NewProductPage() {
     <div className="flex max-w-3xl flex-col gap-4">
       <BackToProducts />
       <ProductForm
+        prefill={prefill}
         categories={categories.data.filter((c) => !c.archived)}
         onSaved={(saved) => {
           void productChanged(saved);

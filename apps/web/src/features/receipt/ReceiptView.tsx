@@ -4,7 +4,8 @@ import { useState } from "react";
 import "./print.css";
 import { renderReceiptPng, shareReceipt } from "./receiptPng";
 
-type Props = { sale: SaleView; storeName: string; queued: boolean; onNewSale: () => void };
+/** `onNewSale` is for the POS; a receipt opened from the records has no next sale to start. */
+type Props = { sale: SaleView; storeName: string; queued: boolean; onNewSale?: () => void };
 
 const fileName = (sale: SaleView) =>
   sale.receiptNo === null ? `receipt-${sale.id.slice(0, 6)}.png` : `receipt-${String(sale.receiptNo).padStart(4, "0")}.png`;
@@ -39,9 +40,11 @@ export function ReceiptView({ sale, storeName, queued, onNewSale }: Props) {
           <Share2 aria-hidden size={18} />
           Share
         </button>
-        <button type="button" onClick={onNewSale} className="ml-auto min-h-12 rounded-control bg-accent px-6 font-medium text-accent-ink">
-          New sale
-        </button>
+        {onNewSale && (
+          <button type="button" onClick={onNewSale} className="ml-auto min-h-12 rounded-control bg-accent px-6 font-medium text-accent-ink">
+            New sale
+          </button>
+        )}
       </div>
       {note && (
         <p role="status" className="text-sm text-muted">

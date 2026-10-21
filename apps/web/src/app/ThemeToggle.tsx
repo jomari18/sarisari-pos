@@ -1,7 +1,7 @@
 import { Moon, Sun } from "lucide-react";
 import { useSyncExternalStore } from "react";
 
-type Theme = "dark" | "light";
+export type Theme = "dark" | "light";
 
 /** The theme lives on <html data-theme> and in localStorage "sari-theme" (read by public/theme-init.js). */
 export const THEME_KEY = "sari-theme";
@@ -24,8 +24,11 @@ function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
+/** The current theme, updated when any control changes it. */
+export const useTheme = (): Theme => useSyncExternalStore(subscribe, currentTheme, () => "dark" as const);
+
 export function ThemeToggle({ className = "" }: { className?: string }) {
-  const dark = useSyncExternalStore(subscribe, currentTheme, () => "dark" as const) === "dark";
+  const dark = useTheme() === "dark";
   return (
     <button
       type="button"

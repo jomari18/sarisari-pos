@@ -3,7 +3,8 @@ import type { Session } from "../auth/session";
 import { DemoBanner } from "../features/demo/DemoBanner";
 import { ThemeToggle } from "./ThemeToggle";
 
-const initials = (name: string) =>
+/** "Mang Ben" → "MB", "Nena" → "N": the avatar letters everywhere a person is shown. */
+export const initials = (name: string) =>
   name
     .split(/\s+/)
     .filter(Boolean)
