@@ -1,27 +1,54 @@
-import { formatPeso, type ProductView } from "@sari/shared";
+import type { ProductView, SaleView } from "@sari/shared";
+import { useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useReducer, useRef, useState, type KeyboardEvent } from "react";
+import { useSession } from "../../auth/session";
 import { Dialog } from "../../components/Dialog";
-import { useCatalog } from "../catalog/useCatalog";
+import { CATALOG_KEY, useCatalog } from "../catalog/useCatalog";
+import { ReceiptView } from "../receipt/ReceiptView";
 import { CartPanel } from "./CartPanel";
 import { CategoryTabs } from "./CategoryTabs";
 import { CustomItemDialog } from "./CustomItemDialog";
+import { PaymentDialog } from "./PaymentDialog";
 import { ProductGrid } from "./ProductGrid";
-import { cartActions, cartReducer, cartTotal } from "./cart";
+import { cartActions, cartReducer, type CartAction } from "./cart";
 import { searchProducts } from "./search";
+import { onlineSubmitter, type SaleSubmitter } from "./submitSale";
 
 const isTextField = (target: EventTarget | null) =>
   target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 
 /** The POS (spec 10): search, category tiles and product cards on the left, the sale on the right. */
-export function PosScreen() {
+export function PosScreen({ submit = onlineSubmitter }: { submit?: SaleSubmitter }) {
+  const session = useSession();
+  const queryClient = useQueryClient();
   const { data, isLoading, error, refetch } = useCatalog();
-  const [lines, dispatch] = useReducer(cartReducer, []);
+  const [lines, dispatchCart] = useReducer(cartReducer, []);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [dialog, setDialog] = useState<"custom" | "payment" | null>(null);
+  // One id per sale attempt: kept across retries and reopening payment, replaced when the cart changes.
+  const [saleId, setSaleId] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<{ sale: SaleView; queued: boolean } | null>(null);
   const searchBox = useRef<HTMLInputElement>(null);
+
+  const dispatch = (action: CartAction) => {
+    dispatchCart(action);
+    setSaleId(null);
+  };
+  const openPayment = () => {
+    if (lines.length === 0) return;
+    setSaleId((id) => id ?? crypto.randomUUID());
+    setDialog("payment");
+  };
+  const finishSale = (result: { sale: SaleView; queued: boolean }) => {
+    dispatch(cartActions.clear());
+    setDialog(null);
+    setReceipt(result);
+    // Stock and suki balances changed.
+    void queryClient.invalidateQueries({ queryKey: CATALOG_KEY });
+  };
 
   const products = useMemo(() => data?.products ?? [], [data]);
   const shown = useMemo(
@@ -41,14 +68,14 @@ export function PosScreen() {
 
   // Keyboard (spec 10): "/" search, F9 payment, + and − the selected line.
   const onKey = useEffectEvent((event: globalThis.KeyboardEvent) => {
-    if (dialog) return;
+    if (dialog || receipt) return;
     const typing = isTextField(event.target);
     if (event.key === "/" && !typing) {
       event.preventDefault();
       searchBox.current?.focus();
     } else if (event.key === "F9") {
       event.preventDefault();
-      if (lines.length > 0) setDialog("payment");
+      openPayment();
     } else if (!typing && selected && (event.key === "+" || event.key === "=")) {
       setQuantity(selected.key, selected.quantity + 1);
     } else if (!typing && selected && (event.key === "-" || event.key === "−")) {
@@ -126,7 +153,7 @@ export function PosScreen() {
         onQuantity={setQuantity}
         onClear={() => dispatch(cartActions.clear())}
         onCustom={() => setDialog("custom")}
-        onCharge={() => setDialog("payment")}
+        onCharge={openPayment}
       />
 
       {dialog === "custom" && (
@@ -140,10 +167,12 @@ export function PosScreen() {
           }}
         />
       )}
-      {dialog === "payment" && (
-        // Task 25 replaces this with the payment dialog (cash and sukli, GCash, utang).
-        <Dialog title="Payment" onClose={() => setDialog(null)}>
-          <p className="mt-2 text-muted">Total {formatPeso(cartTotal(lines))}</p>
+      {dialog === "payment" && saleId && (
+        <PaymentDialog saleId={saleId} lines={lines} customers={data.customers} submit={submit} onDone={finishSale} onClose={() => setDialog(null)} />
+      )}
+      {receipt && (
+        <Dialog title="Receipt" onClose={() => setReceipt(null)}>
+          <ReceiptView sale={receipt.sale} storeName={session?.store.name ?? ""} queued={receipt.queued} onNewSale={() => setReceipt(null)} />
         </Dialog>
       )}
     </div>

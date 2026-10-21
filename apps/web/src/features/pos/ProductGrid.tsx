@@ -11,7 +11,7 @@ type Props = {
 function StockBadge({ product }: { product: ProductView }) {
   if (product.stock > product.reorderLevel) return null;
   return (
-    <span className="rounded-full bg-raised px-2 py-0.5 text-xs text-warning">{product.stock <= 0 ? "None left" : `${product.stock} left`}</span>
+    <span className="whitespace-nowrap rounded-full bg-raised px-2 py-0.5 text-xs text-warning">{product.stock <= 0 ? "None left" : `${product.stock} left`}</span>
   );
 }
 
@@ -34,7 +34,8 @@ export function ProductGrid({ products, inCart, onAdd, onLess }: Props) {
               <span className="mt-1 font-medium leading-snug">{product.name}</span>
               <span className="mt-1 text-sm text-muted">{formatPeso(product.priceCentavos)}</span>
             </button>
-            <div className="mt-3 flex min-h-8 items-center justify-between gap-2">
+            {/* On a narrow card the badge and the − / + controls wrap onto two rows instead of colliding. */}
+            <div className="mt-3 flex min-h-8 flex-wrap items-center justify-between gap-2">
               <StockBadge product={product} />
               {quantity > 0 && (
                 <div className="ml-auto flex items-center gap-2">

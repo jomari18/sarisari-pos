@@ -1,0 +1,32 @@
+/*
+ * Printing a receipt (spec 10): only the receipt, on 58 mm paper. Thermal printers put 32 characters in
+ * about 48 mm, which a 7 pt monospace font fits.
+ */
+@media print {
+  @page {
+    size: 58mm auto;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .receipt-print,
+  .receipt-print * {
+    visibility: visible;
+  }
+
+  .receipt-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 48mm;
+    margin: 0 5mm;
+    padding: 2mm 0;
+    background: #ffffff;
+    color: #000000;
+    font: 7pt/1.3 ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+    white-space: pre;
+  }
+}
