@@ -4,8 +4,10 @@ import { RouterProvider } from "react-router/dom";
 import { useSession } from "../auth/session";
 import { LoginPage } from "../features/auth/LoginPage";
 import { DemoLoginsCard } from "../features/demo/DemoLoginsCard";
+import { PosScreen } from "../features/pos/PosScreen";
 import { AppShell, type RouteHandle } from "./AppShell";
 import { PagePlaceholder, ScreenPlaceholder } from "./Placeholder";
+import { Providers } from "./Providers";
 
 const screen = (path: string, title: string): RouteObject => ({ path, element: <ScreenPlaceholder />, handle: { title } satisfies RouteHandle });
 
@@ -21,7 +23,7 @@ function RequireOwner() {
   return session?.user.role === "OWNER" ? <Outlet /> : <Navigate to="/app/pos" replace />;
 }
 
-export const routes: RouteObject[] = [
+const pages: RouteObject[] = [
   { path: "/", element: <PagePlaceholder title="SariSari POS" /> },
   { path: "/login", element: <LoginPage /> },
   {
@@ -29,7 +31,7 @@ export const routes: RouteObject[] = [
     element: <AppShell />,
     children: [
       { index: true, element: <AppHome />, handle: { title: "Dashboard" } satisfies RouteHandle },
-      screen("pos", "POS"),
+      { path: "pos", element: <PosScreen />, handle: { title: "POS" } satisfies RouteHandle },
       screen("sales", "Sales"),
       screen("suki", "Suki"),
       screen("suki/:id", "Suki ledger"),
@@ -65,6 +67,9 @@ export const routes: RouteObject[] = [
   { path: "/credits", element: <PagePlaceholder title="Credits" /> },
   { path: "*", element: <PagePlaceholder title="Page not found" /> },
 ];
+
+/** Every page sits under the providers (the query cache). */
+export const routes: RouteObject[] = [{ element: <Providers />, children: pages }];
 
 export function App() {
   const [router] = useState(() => createBrowserRouter(routes));
