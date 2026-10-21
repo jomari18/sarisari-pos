@@ -113,3 +113,37 @@ export type DemoLogins = {
   owner: { username: string; password: string };
   bantay: { username: string; pin: string };
 };
+
+// Reports (spec 8.6). Voided sales never count; amounts are centavos.
+
+export type ReportRange = "today" | "7d" | "30d";
+
+/** `byMethod` holds amounts per payment method. Profit leaves out custom items, which have no cost. */
+export type SummaryReport = {
+  salesCentavos: number;
+  count: number;
+  byMethod: Record<PaymentMethod, number>;
+  expectedCashCentavos: number;
+  profitCentavos: number;
+  profitExcludesCustom: true;
+};
+
+export type ProductReportRow = { productId: string; name: string; quantity: number; salesCentavos: number; profitCentavos: number };
+
+export type ProductReport = {
+  bestByQuantity: ProductReportRow[];
+  bestByProfit: ProductReportRow[];
+  /** Active products with no sales in the range. */
+  slowMovers: { productId: string; name: string; stock: number }[];
+};
+
+export type HourlyBucket = { hour: number; count: number; salesCentavos: number };
+
+export type UtangReport = {
+  totalCentavos: number;
+  top: CustomerView[];
+  aging: { d0to7: number; d8to30: number; d31plus: number };
+};
+
+/** A cashier's own sales of the Manila day. */
+export type ShiftReport = { count: number; byMethod: Record<PaymentMethod, number> };

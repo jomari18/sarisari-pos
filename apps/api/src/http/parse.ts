@@ -1,5 +1,6 @@
+import { manilaDate, manilaDayStart } from "@sari/shared";
 import type { Request } from "express";
-import type { z } from "zod";
+import { z } from "zod";
 
 /** A route parameter the path declares, such as `:id`; anything unexpected becomes "" (a lookup then answers 404). */
 export function routeParam(req: Request, name: string): string {
@@ -11,3 +12,8 @@ export function routeParam(req: Request, name: string): string {
 export function parseBody<S extends z.ZodType>(schema: S, value: unknown): z.output<S> {
   return schema.parse(value);
 }
+
+/** A real calendar date such as 2026-10-21, read as a Manila day (2026-02-30 is refused). */
+export const manilaDateParam = z
+  .string()
+  .refine((date) => /^\d{4}-\d{2}-\d{2}$/.test(date) && manilaDate(manilaDayStart(date)) === date, "Use a date like 2026-10-21.");

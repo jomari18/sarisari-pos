@@ -11,7 +11,7 @@ import {
 import { z } from "zod";
 import type { Db } from "../db.js";
 import { Prisma, type Customer } from "../generated/prisma/client.js";
-import { agingBuckets } from "../domain/aging.js";
+import { agingBuckets, type Aging } from "../domain/aging.js";
 import { AppError } from "../http/errors.js";
 import { containsPattern } from "./search.js";
 import type { AuthUser } from "./tokens.js";
@@ -41,24 +41,28 @@ function toEntryView(row: EntryRow): LedgerEntryView {
   };
 }
 
-/** Adds each suki's oldest unpaid days (spec 6.8). Only the ledgers of suki who owe are read. */
-async function toCustomerViews(db: Db, rows: Customer[], now: Date): Promise<CustomerView[]> {
-  const owing = rows.filter((row) => row.balanceCentavos > 0).map((row) => row.id);
-  const entries = owing.length
+/** Each suki's aging from their ledger (spec 6.8), read in one query. */
+export async function agingByCustomer(db: Db, customerIds: string[], now: Date): Promise<Map<string, Aging>> {
+  const entries = customerIds.length
     ? await db.utangEntry.findMany({
-        where: { customerId: { in: owing } },
+        where: { customerId: { in: customerIds } },
         select: { customerId: true, kind: true, amountCentavos: true, createdAt: true, saleId: true },
         orderBy: LEDGER_ORDER,
       })
     : [];
+  return new Map(customerIds.map((id) => [id, agingBuckets(entries.filter((entry) => entry.customerId === id), now)]));
+}
+
+/** Adds each suki's oldest unpaid days. Only the ledgers of suki who owe are read. */
+async function toCustomerViews(db: Db, rows: Customer[], now: Date): Promise<CustomerView[]> {
+  const aging = await agingByCustomer(db, rows.filter((row) => row.balanceCentavos > 0).map((row) => row.id), now);
   return rows.map((row) => ({
     id: row.id,
     name: row.name,
     phone: row.phone,
     creditLimitCentavos: row.creditLimitCentavos,
     balanceCentavos: row.balanceCentavos,
-    oldestUnpaidDays:
-      row.balanceCentavos > 0 ? agingBuckets(entries.filter((entry) => entry.customerId === row.id), now).oldestUnpaidDays : null,
+    oldestUnpaidDays: aging.get(row.id)?.oldestUnpaidDays ?? null,
   }));
 }
 

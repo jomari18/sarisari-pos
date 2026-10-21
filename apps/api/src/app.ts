@@ -13,6 +13,7 @@ import { customersRouter } from "./routes/customers.js";
 import { demoRouter } from "./routes/demo.js";
 import { healthRouter } from "./routes/health.js";
 import { productsRouter } from "./routes/products.js";
+import { reportsRouter } from "./routes/reports.js";
 import { reviewRouter } from "./routes/review.js";
 import { salesRouter } from "./routes/sales.js";
 import { staffRouter } from "./routes/staff.js";
@@ -43,6 +44,7 @@ export function createApp({ config, db, now = () => new Date() }: AppDeps): Expr
   app.use(reviewRouter(config, db, now));
   app.use(customersRouter(config, db, now));
   app.use(staffRouter(config, db, now));
+  app.use(reportsRouter(config, db, now));
 
   app.use(notFound);
   app.use(errorHandler);

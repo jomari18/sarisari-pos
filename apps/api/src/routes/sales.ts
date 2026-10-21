@@ -1,16 +1,14 @@
-import { SaleInput, VoidInput, manilaDate, manilaDayStart } from "@sari/shared";
+import { SaleInput, VoidInput } from "@sari/shared";
 import { Router } from "express";
 import { z } from "zod";
 import type { Config } from "../config.js";
 import type { Db } from "../db.js";
-import { parseBody, routeParam } from "../http/parse.js";
+import { manilaDateParam, parseBody, routeParam } from "../http/parse.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { createSale, getSale, listSales, syncSales, voidSale } from "../services/sales.js";
 
-const isManilaDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date) && manilaDate(manilaDayStart(date)) === date;
-
 const SalesQuery = z.object({
-  date: z.string().refine(isManilaDate, "Use a date like 2026-10-21.").optional(),
+  date: manilaDateParam.optional(),
   cashierId: z.uuid().optional(),
 });
 
