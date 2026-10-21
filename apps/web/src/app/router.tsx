@@ -10,6 +10,8 @@ import { EditProductPage, NewProductPage } from "../features/inventory/ProductFo
 import { ProductsPage } from "../features/inventory/ProductsPage";
 import { RestockPage } from "../features/inventory/RestockPage";
 import { PosScreen } from "../features/pos/PosScreen";
+import { SukiLedgerPage } from "../features/suki/SukiLedgerPage";
+import { SukiListPage } from "../features/suki/SukiListPage";
 import { AppShell, type RouteHandle } from "./AppShell";
 import { PagePlaceholder, ScreenPlaceholder } from "./Placeholder";
 import { Providers } from "./Providers";
@@ -39,8 +41,8 @@ const pages: RouteObject[] = [
       { index: true, element: <AppHome />, handle: { title: "Dashboard" } satisfies RouteHandle },
       { path: "pos", element: <PosScreen />, handle: { title: "POS" } satisfies RouteHandle },
       screen("sales", "Sales"),
-      screen("suki", "Suki"),
-      screen("suki/:id", "Suki ledger"),
+      page("suki", "Suki", <SukiListPage />),
+      page("suki/:id", "Suki ledger", <SukiLedgerPage />),
       screen("shift", "My shift"),
       {
         path: "settings",

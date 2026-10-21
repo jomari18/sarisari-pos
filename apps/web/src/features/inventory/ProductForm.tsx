@@ -4,10 +4,12 @@ import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { ApiError, api } from "../../api/client";
 import { Field, inputClass } from "../../components/Field";
 import { LoadProblem, Loading } from "../../components/LoadProblem";
+import { Notice } from "../../components/Notice";
+import { pesoField, wholeNumber } from "../../lib/format";
 import { NewCategory } from "./CategoriesPage";
 import { MovementsPanel } from "./MovementsPanel";
-import { BackToProducts, Notice } from "./parts";
-import { byName, pesoField, useCategories, useProduct, useProductChanged, wholeNumber } from "./queries";
+import { BackToProducts } from "./parts";
+import { byName, useCategories, useProduct, useProductChanged } from "./queries";
 
 type Values = { name: string; brand: string; barcode: string; categoryId: string; unit: string; price: string; cost: string; reorderLevel: string; packSize: string };
 type FieldName = keyof Values;

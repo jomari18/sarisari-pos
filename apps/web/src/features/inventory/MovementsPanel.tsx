@@ -1,7 +1,8 @@
-import { MANILA_TZ, type MovementReason, type ProductView, type StockMovementView } from "@sari/shared";
+import type { MovementReason, ProductView, StockMovementView } from "@sari/shared";
 import { useId } from "react";
 import { Link } from "react-router";
 import { LoadProblem } from "../../components/LoadProblem";
+import { manilaStamp } from "../../lib/format";
 import { useMovements } from "./queries";
 
 const REASONS: Record<MovementReason, string> = {
@@ -13,8 +14,6 @@ const REASONS: Record<MovementReason, string> = {
   VOID: "Voided sale",
 };
 
-const stamp = new Intl.DateTimeFormat("en-PH", { timeZone: MANILA_TZ, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-
 const signed = (change: number) => (change > 0 ? `+${change}` : change < 0 ? `−${-change}` : "0");
 
 function MovementRow({ movement }: { movement: StockMovementView }) {
@@ -23,7 +22,7 @@ function MovementRow({ movement }: { movement: StockMovementView }) {
       <div className="min-w-0">
         <p className="font-medium">{REASONS[movement.reason]}</p>
         <p className="text-sm text-muted">
-          {stamp.format(new Date(movement.createdAt))} · {movement.user.displayName}
+          {manilaStamp(movement.createdAt)} · {movement.user.displayName}
         </p>
         {movement.sale && (
           <Link to={`/app/sales?sale=${movement.sale.id}`} className="text-sm text-accent underline underline-offset-2">

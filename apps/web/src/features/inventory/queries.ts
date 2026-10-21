@@ -58,10 +58,4 @@ export function useCategoryChanged() {
   };
 }
 
-/** "12.00": how a peso amount sits in a text field (no sign or grouping, so it parses back exactly). */
-export const pesoField = (centavos: number) => (centavos / 100).toFixed(2);
-
-/** A blank field is 0; anything but digits is NaN. */
-export const wholeNumber = (text: string) => (text.trim() === "" ? 0 : /^\d+$/.test(text.trim()) ? Number(text.trim()) : Number.NaN);
-
 export const byName = <T extends { name: string }>(rows: T[]) => [...rows].sort((a, b) => a.name.localeCompare(b.name));

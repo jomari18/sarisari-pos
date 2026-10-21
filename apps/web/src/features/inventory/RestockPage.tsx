@@ -3,8 +3,10 @@ import { useState, type FormEvent } from "react";
 import { ApiError, api } from "../../api/client";
 import { Field, inputClass } from "../../components/Field";
 import { LoadProblem, Loading } from "../../components/LoadProblem";
-import { BackToProducts, Notice, ProductSelect, StockNow, useChosenProduct } from "./parts";
-import { pesoField, useProductChanged, wholeNumber } from "./queries";
+import { Notice } from "../../components/Notice";
+import { pesoField, wholeNumber } from "../../lib/format";
+import { BackToProducts, ProductSelect, StockNow, useChosenProduct } from "./parts";
+import { useProductChanged } from "./queries";
 
 type Errors = { boxes?: string; pieces?: string; cost?: string };
 

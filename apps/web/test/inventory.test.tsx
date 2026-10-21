@@ -6,20 +6,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { routes } from "../src/app/router";
 import { clearSession, setSession } from "../src/auth/session";
 import { DRINKS, FROZEN, SNACKS, catalog, products } from "./support/catalog";
-import { apiError, json, mockFetch, owner, store, type Call } from "./support/fetch";
+import { apiError, json, owner, store, type Call } from "./support/fetch";
+import { serveRoutes, type Handler } from "./support/serve";
 
 const withCost = (p: ProductView, costCentavos: number): ProductView => ({ ...p, costCentavos });
 const kape = withCost({ ...products[0]!, packSize: 20 }, 900);
 const soft = withCost(products[2]!, 7000);
 const archived = withCost({ ...products[3]!, archived: true }, 1100);
 
-type Handler = (call: Call, url: URL) => Response | Promise<Response>;
-let handlers: Record<string, Handler>;
 let calls: Call[];
+let urlsOf: (method: string, path: string) => string[];
 
-/** Answers by "METHOD /path" (query ignored); unknown requests get 404. */
+/** The fake API with these screens' defaults; a test overrides or adds routes. */
 function serve(overrides: Record<string, Handler> = {}) {
-  handlers = {
+  ({ calls, urlsOf } = serveRoutes({
     "GET /api/products": (_, url) => {
       if (url.searchParams.get("status") === "archived") return json(200, [archived]);
       if (url.searchParams.get("lowStock") === "true") return json(200, [soft]);
@@ -30,14 +30,8 @@ function serve(overrides: Record<string, Handler> = {}) {
     "GET /api/categories": () => json(200, catalog.categories),
     "GET /api/products/p-kape/movements": () => json(200, []),
     ...overrides,
-  };
-  calls = mockFetch((call) => {
-    const url = new URL(call.url, "http://localhost");
-    const handler = handlers[`${call.method} ${url.pathname}`];
-    return handler ? handler(call, url) : json(404, { error: { code: "not_found", message: "Not found" } });
-  });
+  }));
 }
-const urlsOf = (method: string, path: string) => calls.filter((c) => c.method === method && new URL(c.url, "http://localhost").pathname === path).map((c) => c.url);
 
 function openAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });

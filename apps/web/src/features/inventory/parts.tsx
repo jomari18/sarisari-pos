@@ -1,26 +1,10 @@
 import type { ProductView } from "@sari/shared";
-import { ChevronLeft } from "lucide-react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
+import { BackLink } from "../../components/BackLink";
 import { Field, inputClass } from "../../components/Field";
 import { ALL_ACTIVE, byName, useProducts } from "./queries";
 
-export function BackToProducts() {
-  return (
-    <Link to="/app/products" className="inline-flex min-h-11 items-center gap-1 self-start rounded-control pr-3 text-muted hover:text-text">
-      <ChevronLeft aria-hidden size={18} />
-      Products
-    </Link>
-  );
-}
-
-export function Notice({ text }: { text: string | null }) {
-  if (!text) return null;
-  return (
-    <p role="status" className="rounded-control bg-raised px-4 py-3">
-      {text}
-    </p>
-  );
-}
+export const BackToProducts = () => <BackLink to="/app/products" label="Products" />;
 
 /** Restock and count work on one active product, named by `?productId=` so the page can be linked and reloaded. */
 export function useChosenProduct() {
