@@ -6,6 +6,9 @@ export type StoreView = { id: string; code: string; name: string; expiresAt: str
 
 export type UserView = { id: string; role: Role; username: string; displayName: string };
 
+/** A bantay account as the owner's Staff screen shows it. */
+export type StaffView = UserView & { active: boolean };
+
 export type CategoryView = { id: string; name: string; archived: boolean };
 
 /** `costCentavos` is present for the owner only (spec 7.4). */
