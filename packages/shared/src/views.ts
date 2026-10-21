@@ -118,7 +118,13 @@ export type DemoLogins = {
 
 export type ReportRange = "today" | "7d" | "30d";
 
-/** `byMethod` holds amounts per payment method. Profit leaves out custom items, which have no cost. */
+/** One Manila day of sales ("2026-10-21"), for the charts. */
+export type DaySales = { date: string; count: number; salesCentavos: number };
+
+/**
+ * `byMethod` holds amounts per payment method. Profit leaves out custom items, which have no cost. `days` has
+ * every Manila day of the range, oldest first, with empty days at zero.
+ */
 export type SummaryReport = {
   salesCentavos: number;
   count: number;
@@ -126,6 +132,7 @@ export type SummaryReport = {
   expectedCashCentavos: number;
   profitCentavos: number;
   profitExcludesCustom: true;
+  days: DaySales[];
 };
 
 export type ProductReportRow = { productId: string; name: string; quantity: number; salesCentavos: number; profitCentavos: number };

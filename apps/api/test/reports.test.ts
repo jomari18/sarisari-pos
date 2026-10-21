@@ -40,6 +40,7 @@ describe("GET /api/reports/summary", () => {
       expectedCashCentavos: 6_400,
       profitCentavos: 2_300,
       profitExcludesCustom: true,
+      days: [{ date: "2026-10-21", count: 3, salesCentavos: 12_400 }],
     });
   });
 
@@ -51,6 +52,7 @@ describe("GET /api/reports/summary", () => {
       expectedCashCentavos: 9_400,
       profitCentavos: 5_100,
       profitExcludesCustom: true,
+      days: expect.any(Array),
     });
     expect((await get("/api/reports/summary?range=30d")).body).toEqual({
       salesCentavos: 33_100,
@@ -59,7 +61,26 @@ describe("GET /api/reports/summary", () => {
       expectedCashCentavos: 16_900,
       profitCentavos: 6_400,
       profitExcludesCustom: true,
+      days: expect.any(Array),
     });
+  });
+
+  it("lists each Manila day of the range for the charts, oldest first, with empty days at zero", async () => {
+    const zero = (date: string) => ({ date, count: 0, salesCentavos: 0 });
+    expect((await get("/api/reports/summary?range=7d")).body.days).toEqual([
+      zero("2026-10-15"),
+      zero("2026-10-16"),
+      zero("2026-10-17"),
+      zero("2026-10-18"),
+      zero("2026-10-19"),
+      { date: "2026-10-20", count: 3, salesCentavos: 13_200 },
+      { date: "2026-10-21", count: 3, salesCentavos: 12_400 },
+    ]);
+    const month = (await get("/api/reports/summary?range=30d")).body.days as { date: string; count: number; salesCentavos: number }[];
+    expect(month).toHaveLength(30);
+    expect(month[0]!.date).toBe("2026-09-22");
+    expect(month.find((day) => day.date === "2026-10-12")).toEqual({ date: "2026-10-12", count: 1, salesCentavos: 7_500 });
+    expect(month.reduce((sum, day) => sum + day.salesCentavos, 0)).toBe(33_100);
   });
 
   it("refuses an unknown range", async () => {

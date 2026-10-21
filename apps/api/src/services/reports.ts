@@ -2,6 +2,7 @@ import {
   manilaDate,
   manilaDayStart,
   type CustomerView,
+  type DaySales,
   type HourlyBucket,
   type PaymentMethod,
   type ProductReport,
@@ -47,13 +48,30 @@ async function salesByMethod(db: Db, storeId: string, start: Date, end: Date, ca
   return { byMethod, count };
 }
 
+/** Sales per Manila day between two day starts, every day present (zero when nothing sold). */
+async function salesByDay(db: Db, storeId: string, start: Date, end: Date): Promise<DaySales[]> {
+  const rows = await db.$queryRaw<{ date: string; count: number; sales: bigint }[]>`
+    SELECT to_char(s."soldAt" AT TIME ZONE 'Asia/Manila', 'YYYY-MM-DD') AS date, COUNT(*)::int AS count,
+           COALESCE(SUM(s."totalCentavos"), 0)::bigint AS sales
+    FROM "Sale" s
+    WHERE s."storeId" = ${storeId}::uuid AND s."voidedAt" IS NULL AND s."soldAt" >= ${start} AND s."soldAt" < ${end}
+    GROUP BY 1`;
+  const byDate = new Map(rows.map((row) => [row.date, row]));
+  const days = Math.round((end.getTime() - start.getTime()) / DAY_MS);
+  return Array.from({ length: days }, (_, i) => {
+    const date = manilaDate(new Date(start.getTime() + i * DAY_MS));
+    const row = byDate.get(date);
+    return { date, count: row?.count ?? 0, salesCentavos: Number(row?.sales ?? 0) };
+  });
+}
+
 /**
  * Sales, count and amounts by method; the cash that should be in the drawer (cash sales plus cash utang
  * payments); and profit from product lines only, since custom items have no cost.
  */
 export async function summary(db: Db, user: AuthUser, range: ReportRange, now: Date): Promise<SummaryReport> {
   const { start, end } = rangeBounds(range, now);
-  const [{ byMethod, count }, payments, [profit]] = await Promise.all([
+  const [{ byMethod, count }, payments, [profit], days] = await Promise.all([
     salesByMethod(db, user.storeId, start, end),
     db.utangEntry.aggregate({
       where: { storeId: user.storeId, kind: "PAYMENT", method: "CASH", createdAt: { gte: start, lt: end } },
@@ -64,6 +82,7 @@ export async function summary(db: Db, user: AuthUser, range: ReportRange, now: D
       FROM "SaleItem" i JOIN "Sale" s ON s."id" = i."saleId"
       WHERE s."storeId" = ${user.storeId}::uuid AND s."voidedAt" IS NULL
         AND s."soldAt" >= ${start} AND s."soldAt" < ${end} AND i."unitCostCentavos" IS NOT NULL`,
+    salesByDay(db, user.storeId, start, end),
   ]);
   return {
     salesCentavos: byMethod.CASH + byMethod.GCASH + byMethod.UTANG,
@@ -73,6 +92,7 @@ export async function summary(db: Db, user: AuthUser, range: ReportRange, now: D
     expectedCashCentavos: byMethod.CASH - (payments._sum.amountCentavos ?? 0),
     profitCentavos: Number(profit!.profit),
     profitExcludesCustom: true,
+    days,
   };
 }
 
