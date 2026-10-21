@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, Outlet, useMatches, useNavigate, type UIMatch } from "react-router";
-import { clearSession, useSession } from "../auth/session";
+import { logout, refreshSession } from "../api/client";
+import { clearSession, deviceRecord, getNotice, getSession, useSession } from "../auth/session";
+import { DemoBanner } from "../features/demo/DemoBanner";
 import { MenuDrawer } from "./MenuDrawer";
 import { SideRail } from "./SideRail";
 import { TopBar } from "./TopBar";
@@ -16,22 +18,48 @@ function pageTitle(matches: UIMatch[]): string {
   return "SariSari POS";
 }
 
+/** After a reload only the device record is left: try the refresh cookie before sending anyone to sign in. */
+function useRestoredSession(): boolean {
+  const [restoring, setRestoring] = useState(() => getSession() === null && getNotice() === null && deviceRecord() !== null);
+  useEffect(() => {
+    if (!restoring) return;
+    let live = true;
+    void refreshSession().finally(() => {
+      if (live) setRestoring(false);
+    });
+    return () => {
+      live = false;
+    };
+  }, [restoring]);
+  return restoring;
+}
+
 /** The signed-in app: rail (or drawer on phones), top bar and the current screen. */
 export function AppShell() {
   const session = useSession();
+  const restoring = useRestoredSession();
   const navigate = useNavigate();
   const title = pageTitle(useMatches());
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const signOut = useCallback(() => {
-    clearSession();
-    navigate("/login", { replace: true });
+    void logout().then(() => {
+      clearSession();
+      navigate("/login", { replace: true });
+    });
   }, [navigate]);
 
   useEffect(() => {
     document.title = `${title} · SariSari POS`;
   }, [title]);
 
+  if (restoring) {
+    return (
+      <main className="grid min-h-dvh place-items-center bg-bg text-muted">
+        <p role="status">Opening your store…</p>
+      </main>
+    );
+  }
   if (!session) return <Navigate to="/login" replace />;
   const { role } = session.user;
   return (
@@ -40,6 +68,9 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar title={title} session={session} onOpenMenu={() => setMenuOpen(true)} />
         <main className="flex-1 px-4 pb-10 md:px-8">
+          <div className="mb-4 lg:hidden">
+            <DemoBanner />
+          </div>
           <Outlet />
         </main>
       </div>

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Navigate, Outlet, createBrowserRouter, type RouteObject } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { useSession } from "../auth/session";
+import { LoginPage } from "../features/auth/LoginPage";
+import { DemoLoginsCard } from "../features/demo/DemoLoginsCard";
 import { AppShell, type RouteHandle } from "./AppShell";
 import { PagePlaceholder, ScreenPlaceholder } from "./Placeholder";
 
@@ -21,7 +23,7 @@ function RequireOwner() {
 
 export const routes: RouteObject[] = [
   { path: "/", element: <PagePlaceholder title="SariSari POS" /> },
-  { path: "/login", element: <PagePlaceholder title="Sign in" /> },
+  { path: "/login", element: <LoginPage /> },
   {
     path: "/app",
     element: <AppShell />,
@@ -32,7 +34,17 @@ export const routes: RouteObject[] = [
       screen("suki", "Suki"),
       screen("suki/:id", "Suki ledger"),
       screen("shift", "My shift"),
-      screen("settings", "Settings"),
+      {
+        path: "settings",
+        // Task 28 builds the rest of Settings; the demo logins card is needed from the first sign-in.
+        element: (
+          <div className="flex flex-col gap-6">
+            <DemoLoginsCard />
+            <ScreenPlaceholder />
+          </div>
+        ),
+        handle: { title: "Settings" } satisfies RouteHandle,
+      },
       {
         element: <RequireOwner />,
         children: [

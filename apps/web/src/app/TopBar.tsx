@@ -1,5 +1,6 @@
 import { Menu } from "lucide-react";
 import type { Session } from "../auth/session";
+import { DemoBanner } from "../features/demo/DemoBanner";
 import { ThemeToggle } from "./ThemeToggle";
 
 const initials = (name: string) =>
@@ -18,6 +19,9 @@ export function TopBar({ title, session, onOpenMenu }: { title: string; session:
         <Menu aria-hidden size={20} />
       </button>
       <h1 className="min-w-0 flex-1 truncate text-xl font-medium md:text-2xl">{title}</h1>
+      <div className="hidden lg:block">
+        <DemoBanner />
+      </div>
       <span className="hidden max-w-56 truncate text-sm text-muted sm:inline">{session.store.name}</span>
       <ThemeToggle />
       <span className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-sm font-semibold text-accent-ink" title={session.user.displayName}>
