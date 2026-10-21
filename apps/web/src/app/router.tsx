@@ -1,15 +1,21 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Navigate, Outlet, createBrowserRouter, type RouteObject } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { useSession } from "../auth/session";
 import { LoginPage } from "../features/auth/LoginPage";
 import { DemoLoginsCard } from "../features/demo/DemoLoginsCard";
+import { CategoriesPage } from "../features/inventory/CategoriesPage";
+import { CountPage } from "../features/inventory/CountPage";
+import { EditProductPage, NewProductPage } from "../features/inventory/ProductForm";
+import { ProductsPage } from "../features/inventory/ProductsPage";
+import { RestockPage } from "../features/inventory/RestockPage";
 import { PosScreen } from "../features/pos/PosScreen";
 import { AppShell, type RouteHandle } from "./AppShell";
 import { PagePlaceholder, ScreenPlaceholder } from "./Placeholder";
 import { Providers } from "./Providers";
 
-const screen = (path: string, title: string): RouteObject => ({ path, element: <ScreenPlaceholder />, handle: { title } satisfies RouteHandle });
+const page = (path: string, title: string, element: ReactNode): RouteObject => ({ path, element, handle: { title } satisfies RouteHandle });
+const screen = (path: string, title: string) => page(path, title, <ScreenPlaceholder />);
 
 /** The owner lands on the dashboard; a bantay goes straight to the POS. */
 function AppHome() {
@@ -50,12 +56,12 @@ const pages: RouteObject[] = [
       {
         element: <RequireOwner />,
         children: [
-          screen("products", "Products"),
-          screen("products/new", "New product"),
-          screen("products/:id", "Edit product"),
-          screen("categories", "Categories"),
-          screen("stock/restock", "Restock"),
-          screen("stock/count", "Stock count"),
+          page("products", "Products", <ProductsPage />),
+          page("products/new", "New product", <NewProductPage />),
+          page("products/:id", "Edit product", <EditProductPage />),
+          page("categories", "Categories", <CategoriesPage />),
+          page("stock/restock", "Restock", <RestockPage />),
+          page("stock/count", "Stock count", <CountPage />),
           screen("reports", "Reports"),
           screen("review", "Needs review"),
           screen("staff", "Staff"),
