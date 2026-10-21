@@ -8,9 +8,11 @@ import { requireProxySignature } from "./middleware/proxySignature.js";
 import { adminRouter } from "./routes/admin.js";
 import { authRouter } from "./routes/auth.js";
 import { catalogRouter } from "./routes/catalog.js";
+import { categoriesRouter } from "./routes/categories.js";
 import { customersRouter } from "./routes/customers.js";
 import { demoRouter } from "./routes/demo.js";
 import { healthRouter } from "./routes/health.js";
+import { productsRouter } from "./routes/products.js";
 import { reviewRouter } from "./routes/review.js";
 import { salesRouter } from "./routes/sales.js";
 
@@ -32,6 +34,8 @@ export function createApp({ config, db, now = () => new Date() }: AppDeps): Expr
   app.use(demoRouter(config, db, now));
   app.use(adminRouter(config, db, now));
   app.use(catalogRouter(config, db, now));
+  app.use(productsRouter(config, db, now));
+  app.use(categoriesRouter(config, db, now));
   app.use(salesRouter(config, db, now));
   app.use(reviewRouter(config, db, now));
   app.use(customersRouter(config, db, now));

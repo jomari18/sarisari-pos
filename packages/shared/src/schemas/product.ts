@@ -23,3 +23,7 @@ export type ProductPatch = z.infer<typeof ProductPatch>;
 
 export const CategoryInput = z.strictObject({ name: nameSchema(30) });
 export type CategoryInput = z.infer<typeof CategoryInput>;
+
+/** Rename a category, or archive it so the POS stops showing its tile. */
+export const CategoryPatch = z.strictObject({ name: nameSchema(30).optional(), archived: z.boolean().optional() });
+export type CategoryPatch = z.infer<typeof CategoryPatch>;

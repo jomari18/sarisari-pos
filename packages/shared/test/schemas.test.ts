@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   AdjustInput,
   AdjustmentInput,
+  CategoryPatch,
   CustomerInput,
   LoginInput,
   PaymentInput,
@@ -113,6 +114,13 @@ describe("products, suki, stock, staff", () => {
     expect(ProductInput.safeParse({ ...product, barcode: "12AB" }).success).toBe(false);
     expect(ProductInput.safeParse({ ...product, priceCentavos: -1 }).success).toBe(false);
     expect(ProductInput.safeParse({ ...product, priceCentavos: 10_000_001 }).success).toBe(false);
+  });
+
+  it("renames or archives a category, and nothing else", () => {
+    expect(CategoryPatch.parse({ name: "  Canned   goods " })).toEqual({ name: "Canned goods" });
+    expect(CategoryPatch.parse({ archived: true })).toEqual({ archived: true });
+    expect(CategoryPatch.safeParse({ name: "" }).success).toBe(false);
+    expect(CategoryPatch.safeParse({ storeId: uuid() }).success).toBe(false);
   });
 
   it("accepts Philippine mobile numbers only", () => {
