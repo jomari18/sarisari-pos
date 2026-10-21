@@ -1,5 +1,5 @@
 // Shapes the API returns. Times are ISO strings; money is integer centavos.
-import type { PaymentMethod, Role, SaleFlag, UtangKind } from "./enums.js";
+import type { MovementReason, PaymentMethod, Role, SaleFlag, UtangKind } from "./enums.js";
 import type { ErrorCode } from "./errors.js";
 
 export type StoreView = { id: string; code: string; name: string; expiresAt: string };
@@ -23,6 +23,18 @@ export type ProductView = {
   packSize: number;
   archived: boolean;
   updatedAt: string;
+};
+
+/** One line of a product's stock history (owner only). A sale's movement links to its receipt. */
+export type StockMovementView = {
+  id: string;
+  change: number;
+  reason: MovementReason;
+  stockAfter: number;
+  note: string | null;
+  sale: { id: string; receiptNo: number } | null;
+  user: { id: string; displayName: string };
+  createdAt: string;
 };
 
 /** What the POS needs about a suki: enough to check the utang limit. */

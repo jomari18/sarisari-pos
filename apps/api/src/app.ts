@@ -15,6 +15,7 @@ import { healthRouter } from "./routes/health.js";
 import { productsRouter } from "./routes/products.js";
 import { reviewRouter } from "./routes/review.js";
 import { salesRouter } from "./routes/sales.js";
+import { stockRouter } from "./routes/stock.js";
 
 export type AppDeps = { config: Config; db: Db; now?: () => Date };
 
@@ -36,6 +37,7 @@ export function createApp({ config, db, now = () => new Date() }: AppDeps): Expr
   app.use(catalogRouter(config, db, now));
   app.use(productsRouter(config, db, now));
   app.use(categoriesRouter(config, db, now));
+  app.use(stockRouter(config, db, now));
   app.use(salesRouter(config, db, now));
   app.use(reviewRouter(config, db, now));
   app.use(customersRouter(config, db, now));

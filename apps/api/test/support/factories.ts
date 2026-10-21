@@ -50,7 +50,7 @@ export async function seedStore(db: Db, opts: { code?: string; expiresAt?: Date;
   for (const row of productRows) {
     const product = await db.product.create({ data: { storeId: store.id, ...row } });
     await db.stockMovement.create({
-      data: { storeId: store.id, productId: product.id, change: row.stock, reason: "RESTOCK", userId: owner.id, stockAfter: row.stock },
+      data: { storeId: store.id, productId: product.id, change: row.stock, reason: "RESTOCK", userId: owner.id, stockAfter: row.stock, createdAt: now },
     });
     products.push({ id: product.id, priceCentavos: product.priceCentavos, costCentavos: product.costCentavos, stock: product.stock });
   }
