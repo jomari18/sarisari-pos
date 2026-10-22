@@ -36,7 +36,9 @@ export function DemoLoginsCard() {
     try {
       if (asBantay) await loginWith(logins!.owner.username, logins!.owner.password);
       else await loginWith(logins!.bantay.username, logins!.bantay.pin);
-      navigate("/app");
+      // Straight to the new role's home: "/app" would cut off the bantay's own redirect to the POS mid-way and
+      // leave them on an empty page.
+      navigate(asBantay ? "/app" : "/app/pos");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not switch. Please try again.");
     } finally {

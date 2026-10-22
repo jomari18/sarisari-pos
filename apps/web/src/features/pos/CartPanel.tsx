@@ -71,16 +71,16 @@ export function CartPanel({ lines, selectedKey, onSelect, onQuantity, onClear, o
                 <p className="font-medium">{formatPeso(line.quantity * line.unitPriceCentavos)}</p>
               </div>
               <div className="mt-2 flex items-center justify-end gap-2">
-                <button type="button" aria-label={`Remove ${line.name}`} onClick={() => onQuantity(line.key, 0)} className="mr-auto grid size-9 place-items-center rounded-full text-muted hover:text-danger">
+                <button type="button" aria-label={`Remove ${line.name}`} onClick={() => onQuantity(line.key, 0)} className="mr-auto grid size-11 place-items-center rounded-full text-muted hover:text-danger">
                   <Trash aria-hidden size={16} />
                 </button>
-                <button type="button" aria-label={`One less ${line.name}`} onClick={() => onQuantity(line.key, line.quantity - 1)} className="grid size-9 place-items-center rounded-full bg-surface">
+                <button type="button" aria-label={`One less ${line.name}`} onClick={() => onQuantity(line.key, line.quantity - 1)} className="grid size-11 place-items-center rounded-full bg-surface">
                   <Minus aria-hidden size={14} />
                 </button>
                 <output aria-label="Quantity" className="min-w-6 text-center">
                   {line.quantity}
                 </output>
-                <button type="button" aria-label={`One more ${line.name}`} onClick={() => onQuantity(line.key, line.quantity + 1)} className="grid size-9 place-items-center rounded-full bg-accent text-accent-ink">
+                <button type="button" aria-label={`One more ${line.name}`} onClick={() => onQuantity(line.key, line.quantity + 1)} className="grid size-11 place-items-center rounded-full bg-accent text-accent-ink">
                   <Plus aria-hidden size={14} />
                 </button>
               </div>

@@ -7,7 +7,9 @@ import { routes } from "../src/app/router";
 import { DEVICE_KEY, clearSession, endSession, getSession, setSession } from "../src/auth/session";
 import { DemoBanner } from "../src/features/demo/DemoBanner";
 import { DemoLoginsCard } from "../src/features/demo/DemoLoginsCard";
+import { catalog } from "./support/catalog";
 import { apiError, bantay, demoLogins, json, mockFetch, owner, store } from "./support/fetch";
+import { serveRoutes } from "./support/serve";
 
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
@@ -82,6 +84,16 @@ describe("demo cards (spec 7.5)", () => {
     await screen.findByRole("button", { name: "Switch to owner" });
     expect(calls[0]!.body).toBe(JSON.stringify({ username: "nena.7k2f", secret: "482915" }));
     expect(getSession()).toMatchObject({ accessToken: "t2", user: { role: "BANTAY" }, demoLogins });
+  });
+
+  it("takes the new bantay from the owner's dashboard straight to the POS", async () => {
+    setSession({ accessToken: "t1", user: owner, store, demoLogins });
+    serveRoutes({ "POST /api/auth/login": () => json(200, { accessToken: "t2", user: bantay, store }), "GET /api/catalog": () => json(200, catalog) });
+    const router = createMemoryRouter(routes, { initialEntries: [{ pathname: "/app", state: { welcome: true } }] });
+    render(<RouterProvider router={router} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Switch to bantay" }));
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe("/app/pos"));
+    expect(await screen.findByRole("heading", { level: 1, name: "POS" })).toBeInTheDocument();
   });
 
   it("says how long the demo store has left", () => {
