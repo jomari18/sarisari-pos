@@ -242,8 +242,11 @@ export function ProductForm({ product, categories, onSaved, onReload, notice: la
 }
 
 /** `/app/products/new`. A new product starts with no stock; restocking puts it on the shelf. */
-/** `?name=…&price=…` fill in a new product, so a custom item from "Needs review" becomes a product in one step (spec 6.6). */
-const PREFILLED = ["name", "price"] as const;
+/**
+ * `?name=…&price=…` fill in a new product, so a custom item from "Needs review" becomes a product in one step
+ * (spec 6.6); `?barcode=…` comes from a scanned code that matched no product (spec 10).
+ */
+const PREFILLED = ["name", "price", "barcode"] as const;
 
 export function NewProductPage() {
   const navigate = useNavigate();

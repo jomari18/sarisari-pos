@@ -3,6 +3,7 @@ import { Navigate, Outlet, createBrowserRouter, type RouteObject } from "react-r
 import { RouterProvider } from "react-router/dom";
 import { useSession } from "../auth/session";
 import { LoginPage } from "../features/auth/LoginPage";
+import { SampleBarcodesPage } from "../features/barcodes/SampleBarcodesPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { CategoriesPage } from "../features/inventory/CategoriesPage";
 import { CountPage } from "../features/inventory/CountPage";
@@ -66,7 +67,7 @@ const pages: RouteObject[] = [
       },
     ],
   },
-  { path: "/barcodes", element: <PagePlaceholder title="Sample barcodes" /> },
+  { path: "/barcodes", element: <SampleBarcodesPage /> },
   { path: "/credits", element: <PagePlaceholder title="Credits" /> },
   { path: "*", element: <PagePlaceholder title="Page not found" /> },
 ];

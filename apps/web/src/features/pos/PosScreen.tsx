@@ -1,7 +1,15 @@
 import type { ProductView, SaleView } from "@sari/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search } from "lucide-react";
-import { useEffect, useEffectEvent, useMemo, useReducer, useRef, useState, type KeyboardEvent } from "react";
+import { ScanBarcode, Search } from "lucide-react";
+import {
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { useSession } from "../../auth/session";
 import { Dialog } from "../../components/Dialog";
 import { manilaStamp } from "../../lib/format";
@@ -10,6 +18,8 @@ import { CATALOG_KEY, useCatalog } from "../catalog/useCatalog";
 import { ReceiptView } from "../receipt/ReceiptView";
 import { CartPanel } from "./CartPanel";
 import { CategoryTabs } from "./CategoryTabs";
+import { ScannerDialog } from "../scanner/ScannerDialog";
+import { UnknownBarcodeSheet } from "../scanner/UnknownBarcodeSheet";
 import { CustomItemDialog } from "./CustomItemDialog";
 import { PaymentDialog } from "./PaymentDialog";
 import { ProductGrid } from "./ProductGrid";
@@ -18,10 +28,16 @@ import { searchProducts } from "./search";
 import { offlineSubmitter, type SaleSubmitter } from "./submitSale";
 
 const isTextField = (target: EventTarget | null) =>
-  target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+  target instanceof HTMLElement &&
+  (target.isContentEditable ||
+    ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 
 /** The POS (spec 10): search, category tiles and product cards on the left, the sale on the right. */
-export function PosScreen({ submit = offlineSubmitter }: { submit?: SaleSubmitter }) {
+export function PosScreen({
+  submit = offlineSubmitter,
+}: {
+  submit?: SaleSubmitter;
+}) {
   const session = useSession();
   const queryClient = useQueryClient();
   const { data, isOffline, isLoading, error, refetch } = useCatalog();
@@ -29,10 +45,17 @@ export function PosScreen({ submit = offlineSubmitter }: { submit?: SaleSubmitte
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [dialog, setDialog] = useState<"custom" | "payment" | null>(null);
+  const [dialog, setDialog] = useState<"custom" | "payment" | "scan" | null>(
+    null,
+  );
+  // A scanned code that matches no product (spec 10).
+  const [unknownCode, setUnknownCode] = useState<string | null>(null);
   // One id per sale attempt: kept across retries and reopening payment, replaced when the cart changes.
   const [saleId, setSaleId] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<{ sale: SaleView; queued: boolean } | null>(null);
+  const [receipt, setReceipt] = useState<{
+    sale: SaleView;
+    queued: boolean;
+  } | null>(null);
   const searchBox = useRef<HTMLInputElement>(null);
 
   const dispatch = (action: CartAction) => {
@@ -54,10 +77,16 @@ export function PosScreen({ submit = offlineSubmitter }: { submit?: SaleSubmitte
 
   const products = useMemo(() => data?.products ?? [], [data]);
   const shown = useMemo(
-    () => (query.trim() ? searchProducts(products, query) : products.filter((p) => categoryId === null || p.categoryId === categoryId)),
+    () =>
+      query.trim()
+        ? searchProducts(products, query)
+        : products.filter(
+            (p) => categoryId === null || p.categoryId === categoryId,
+          ),
     [products, query, categoryId],
   );
-  const selected = lines.find((line) => line.key === selectedKey) ?? lines.at(-1) ?? null;
+  const selected =
+    lines.find((line) => line.key === selectedKey) ?? lines.at(-1) ?? null;
 
   const add = (product: ProductView) => {
     dispatch(cartActions.add(product));
@@ -78,9 +107,17 @@ export function PosScreen({ submit = offlineSubmitter }: { submit?: SaleSubmitte
     } else if (event.key === "F9") {
       event.preventDefault();
       openPayment();
-    } else if (!typing && selected && (event.key === "+" || event.key === "=")) {
+    } else if (
+      !typing &&
+      selected &&
+      (event.key === "+" || event.key === "=")
+    ) {
       setQuantity(selected.key, selected.quantity + 1);
-    } else if (!typing && selected && (event.key === "-" || event.key === "−")) {
+    } else if (
+      !typing &&
+      selected &&
+      (event.key === "-" || event.key === "−")
+    ) {
       setQuantity(selected.key, selected.quantity - 1);
     }
   });
@@ -104,12 +141,21 @@ export function PosScreen({ submit = offlineSubmitter }: { submit?: SaleSubmitte
     }
   }
 
-  if (isLoading) return <p className="rounded-card bg-surface p-6 text-muted">Loading the products…</p>;
+  if (isLoading)
+    return (
+      <p className="rounded-card bg-surface p-6 text-muted">
+        Loading the products…
+      </p>
+    );
   if (error || !data) {
     return (
       <div role="alert" className="rounded-card bg-surface p-6">
         <p>{error?.message ?? "Could not load the products."}</p>
-        <button type="button" onClick={refetch} className="mt-4 min-h-11 rounded-control bg-accent px-5 font-medium text-accent-ink">
+        <button
+          type="button"
+          onClick={refetch}
+          className="mt-4 min-h-11 rounded-control bg-accent px-5 font-medium text-accent-ink"
+        >
           Try again
         </button>
       </div>
@@ -122,36 +168,66 @@ export function PosScreen({ submit = offlineSubmitter }: { submit?: SaleSubmitte
         <CouldntSyncList className="mb-4" />
         {isOffline && (
           // Spec 9: stock shown offline is the last known number, with its time.
-          <p role="status" className="mb-4 rounded-control bg-raised px-4 py-3 text-sm text-warning">
+          <p
+            role="status"
+            className="mb-4 rounded-control bg-raised px-4 py-3 text-sm text-warning"
+          >
             {`Offline. Stock as of ${manilaStamp(data.generatedAt).split(", ").at(-1)}.`}
           </p>
         )}
-        <label className="relative block">
-          <span className="sr-only">Search products</span>
-          <Search aria-hidden size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-          <input
-            ref={searchBox}
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={onSearchKey}
-            aria-keyshortcuts="/"
-            placeholder="Search name or brand, or type a barcode   ( / )"
-            className="h-12 w-full rounded-control bg-surface pl-11 pr-4 text-text placeholder:text-muted"
-          />
-        </label>
+        <div className="flex gap-2">
+          <label className="relative block flex-1">
+            <span className="sr-only">Search products</span>
+            <Search
+              aria-hidden
+              size={18}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              ref={searchBox}
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={onSearchKey}
+              aria-keyshortcuts="/"
+              placeholder="Search name or brand, or type a barcode   ( / )"
+              className="h-12 w-full rounded-control bg-surface pl-11 pr-4 text-text placeholder:text-muted"
+            />
+          </label>
+          <button
+            type="button"
+            aria-label="Scan a barcode"
+            onClick={() => setDialog("scan")}
+            className="grid size-12 shrink-0 place-items-center rounded-control bg-surface text-text hover:bg-raised"
+          >
+            <ScanBarcode aria-hidden size={20} />
+          </button>
+        </div>
 
         {!query.trim() && (
           <div className="mt-5">
-            <CategoryTabs categories={data.categories} products={products} selected={categoryId} onSelect={setCategoryId} />
+            <CategoryTabs
+              categories={data.categories}
+              products={products}
+              selected={categoryId}
+              onSelect={setCategoryId}
+            />
           </div>
         )}
         <hr className="my-5 border-raised" />
         <ProductGrid
           products={shown}
-          inCart={(id) => lines.find((line) => line.productId === id)?.quantity ?? 0}
+          inCart={(id) =>
+            lines.find((line) => line.productId === id)?.quantity ?? 0
+          }
           onAdd={add}
-          onLess={(product) => setQuantity(product.id, (lines.find((line) => line.productId === product.id)?.quantity ?? 0) - 1)}
+          onLess={(product) =>
+            setQuantity(
+              product.id,
+              (lines.find((line) => line.productId === product.id)?.quantity ??
+                0) - 1,
+            )
+          }
         />
       </div>
 
@@ -165,11 +241,38 @@ export function PosScreen({ submit = offlineSubmitter }: { submit?: SaleSubmitte
         onCharge={openPayment}
       />
 
+      {dialog === "scan" && (
+        <ScannerDialog
+          onClose={() => setDialog(null)}
+          onCode={(code) => {
+            setDialog(null);
+            const product = products.find((p) => p.barcode === code);
+            if (product) add(product);
+            else setUnknownCode(code);
+          }}
+        />
+      )}
+      {unknownCode && (
+        <UnknownBarcodeSheet
+          code={unknownCode}
+          isOwner={session?.user.role === "OWNER"}
+          onClose={() => setUnknownCode(null)}
+          onCustom={() => {
+            setUnknownCode(null);
+            setDialog("custom");
+          }}
+        />
+      )}
       {dialog === "custom" && (
         <CustomItemDialog
           onClose={() => setDialog(null)}
           onAdd={(name, price, quantity) => {
-            const action = cartActions.addCustom(name, price, undefined, quantity);
+            const action = cartActions.addCustom(
+              name,
+              price,
+              undefined,
+              quantity,
+            );
             dispatch(action);
             if (action.type === "addCustom") setSelectedKey(action.key);
             setDialog(null);
@@ -177,11 +280,23 @@ export function PosScreen({ submit = offlineSubmitter }: { submit?: SaleSubmitte
         />
       )}
       {dialog === "payment" && saleId && (
-        <PaymentDialog saleId={saleId} lines={lines} customers={data.customers} submit={submit} onDone={finishSale} onClose={() => setDialog(null)} />
+        <PaymentDialog
+          saleId={saleId}
+          lines={lines}
+          customers={data.customers}
+          submit={submit}
+          onDone={finishSale}
+          onClose={() => setDialog(null)}
+        />
       )}
       {receipt && (
         <Dialog title="Receipt" onClose={() => setReceipt(null)}>
-          <ReceiptView sale={receipt.sale} storeName={session?.store.name ?? ""} queued={receipt.queued} onNewSale={() => setReceipt(null)} />
+          <ReceiptView
+            sale={receipt.sale}
+            storeName={session?.store.name ?? ""}
+            queued={receipt.queued}
+            onNewSale={() => setReceipt(null)}
+          />
         </Dialog>
       )}
     </div>
