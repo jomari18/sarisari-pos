@@ -12,7 +12,7 @@ export function useChosenProduct() {
   const products = useProducts(ALL_ACTIVE);
   const productId = params.get("productId") ?? "";
   const product = products.data?.find((p) => p.id === productId) ?? null;
-  const choose = (id: string) => setParams(id ? { productId: id } : {}, { replace: true });
+  const choose = (id: string) => setParams(id ? { productId: id } : {}, { replace: true, preventScrollReset: true });
   return { products, product, choose };
 }
 

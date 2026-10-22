@@ -5,6 +5,7 @@ import { useSession } from "../auth/session";
 import { LoginPage } from "../features/auth/LoginPage";
 import { SampleBarcodesPage } from "../features/barcodes/SampleBarcodesPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
+import { LandingPage } from "../landing/LandingPage";
 import { CategoriesPage } from "../features/inventory/CategoriesPage";
 import { CountPage } from "../features/inventory/CountPage";
 import { EditProductPage, NewProductPage } from "../features/inventory/ProductForm";
@@ -38,7 +39,7 @@ function RequireOwner() {
 }
 
 const pages: RouteObject[] = [
-  { path: "/", element: <PagePlaceholder title="ZariZari" /> },
+  { path: "/", element: <LandingPage /> },
   { path: "/login", element: <LoginPage /> },
   {
     path: "/app",

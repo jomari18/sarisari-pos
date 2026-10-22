@@ -62,7 +62,8 @@ export function SalesPage() {
         else next.delete("sale");
         return next;
       },
-      { replace: true },
+      // The sale opens over the list, so the list stays where it was.
+      { replace: true, preventScrollReset: true },
     );
 
   const counted = sales.data?.filter((sale) => !sale.voidedAt) ?? [];

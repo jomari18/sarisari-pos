@@ -284,6 +284,19 @@ describe("restock and count", () => {
     expect(JSON.parse(calls.find((c) => c.method === "POST")!.body!)).toEqual({ productId: "p-kape", boxes: 2, pieces: 5, unitCostCentavos: 900 });
   });
 
+  it("keeps its place on the page when a product is chosen", async () => {
+    serve();
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const router = openAt("/app/stock/restock");
+    const product = await screen.findByLabelText("Product");
+    await screen.findByRole("option", { name: /^Kape 3-in-1/ });
+    scrollTo.mockClear();
+    await userEvent.selectOptions(product, "p-kape");
+    expect(await screen.findByLabelText("Boxes")).toBeInTheDocument();
+    expect(router.state.location.search).toBe("?productId=p-kape");
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
   it("shows the difference from the records before saving a count", async () => {
     serve({ "POST /api/stock/adjust": () => json(200, { ...soft, stock: 1 }) });
     openAt("/app/stock/count?productId=p-soft");

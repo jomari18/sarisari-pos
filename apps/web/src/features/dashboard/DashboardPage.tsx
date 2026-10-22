@@ -1,7 +1,8 @@
 import { formatPeso } from "@sari/shared";
 import { Banknote, PiggyBank, Wallet } from "lucide-react";
 import { useId, type ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
+import { DemoLoginsCard } from "../demo/DemoLoginsCard";
 import { StatCard } from "../../components/StatCard";
 import { ALL_ACTIVE, useProducts } from "../inventory/queries";
 import { BarSpark } from "../reports/BarSpark";
@@ -41,11 +42,14 @@ export function DashboardPage() {
   const low = useProducts(LOW_STOCK);
   const review = useReview();
   const trendId = useId();
+  // Spec 3.1: a new demo store opens here with its two logins on show.
+  const welcome = (useLocation().state as { welcome?: boolean } | null)?.welcome === true;
   const day = today.data?.days[0]?.date;
   const week = month.data?.days.slice(-7);
 
   return (
     <div className="flex flex-col gap-6">
+      {welcome && <DemoLoginsCard />}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <StatCard
           title="Today's sales"

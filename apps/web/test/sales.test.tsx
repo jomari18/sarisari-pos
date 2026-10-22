@@ -76,6 +76,21 @@ describe("sales", () => {
     await vi.waitFor(() => expect(within(screen.getByRole("list", { name: "Sales" })).getAllByText("Voided")).toHaveLength(2));
   });
 
+  it("keeps the list where it was while a sale opens and closes", async () => {
+    serve();
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const router = openAt("/app/sales");
+    const row = await screen.findByRole("button", { name: /^Receipt No. 1042/ });
+    scrollTo.mockClear();
+    await userEvent.click(row);
+    expect(await screen.findByRole("dialog", { name: "Sale No. 1042" })).toBeInTheDocument();
+    expect(router.state.location.search).toBe("?sale=s-1042");
+    await userEvent.keyboard("{Escape}");
+    await vi.waitFor(() => expect(router.state.location.search).toBe(""));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
   it("opens the sale named in a link from a ledger or the stock history", async () => {
     serve({ "GET /api/sales": () => json(200, []), "GET /api/sales/s-9": () => json(200, sale({ id: "s-9", receiptNo: 9 })) });
     openAt("/app/sales?sale=s-9");
