@@ -1,7 +1,20 @@
 import type { ApiErrorBody, ErrorCode, StoreView, UserView } from "@sari/shared";
-import { deviceRecord, endSession, getSession, setSession } from "../auth/session";
+import { deviceRecord, endSession, getSession, markStoreEnded, setSession, storeHasEnded } from "../auth/session";
 
 export const SESSION_ENDED = "Your session ended. Please sign in again.";
+export const STORE_ENDED = "This demo store has ended. Start a new demo to keep trying the app.";
+
+/**
+ * What a refresh found: a new access token, no connection (keep working offline), a session that needs a
+ * new sign-in, or a demo store that has ended (spec 7.3, 9).
+ */
+export type RefreshResult = "refreshed" | "offline" | "signed-out" | "store-ended";
+
+/** A session the server will not renew ends here, with the reason for the login page. */
+export function endSessionFor(outcome: RefreshResult): void {
+  if (outcome === "signed-out") endSession(SESSION_ENDED);
+  if (outcome === "store-ended") endSession(STORE_ENDED);
+}
 
 /** An error answer from the API (spec 8.7), or status 0 when the server could not be reached. */
 export class ApiError extends Error {
@@ -53,56 +66,74 @@ async function read<T>(res: Response): Promise<T> {
  * cookie is rotated once and the request retried; if that fails too, the session ends (spec 7.2).
  */
 export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
-  const first = await send(path, init, getSession()?.accessToken);
+  const first = await send(path, init, getSession()?.accessToken ?? undefined);
   // A 401 from the sign-in routes is the answer itself (a wrong password), not an expired token.
   if (first.status !== 401 || !getSession() || path.startsWith("/auth/")) return read<T>(first);
-  if (await refreshSession()) {
-    const retry = await send(path, init, getSession()?.accessToken);
+  const outcome = await refreshSession();
+  if (outcome === "refreshed") {
+    const retry = await send(path, init, getSession()?.accessToken ?? undefined);
     if (retry.status !== 401) return read<T>(retry);
+    endSession(SESSION_ENDED);
+  } else {
+    endSessionFor(outcome);
   }
-  endSession(SESSION_ENDED);
   throw await toApiError(first);
 }
 
-let refreshing: Promise<boolean> | null = null;
+let refreshing: Promise<RefreshResult> | null = null;
 
 /**
  * Gets a new access token with the refresh cookie. Calls at the same moment share one request, and tabs
  * take turns through a Web Lock: sending a cookie that was already rotated would end every session (spec 7.2).
  */
-export function refreshSession(): Promise<boolean> {
+export function refreshSession(): Promise<RefreshResult> {
   refreshing ??= withRefreshLock(rotate).finally(() => {
     refreshing = null;
   });
   return refreshing;
 }
 
-async function withRefreshLock(task: () => Promise<boolean>): Promise<boolean> {
+async function withRefreshLock(task: () => Promise<RefreshResult>): Promise<RefreshResult> {
   if (typeof navigator !== "undefined" && navigator.locks) return await navigator.locks.request("sari-refresh", task);
   return task();
 }
 
-async function rotate(): Promise<boolean> {
+async function rotate(): Promise<RefreshResult> {
   let res: Response;
   try {
     res = await fetch("/api/auth/refresh", { method: "POST", headers: { "X-Requested-With": "sari-pos" }, credentials: "same-origin" });
   } catch {
-    return false;
+    return "offline";
   }
-  if (!res.ok) return false;
+  if (res.status === 401) {
+    const body = (await res.json().catch(() => null)) as ApiErrorBody | null;
+    // A deleted store's sessions are gone too, so its device only hears "unauthenticated"; its own clock knows better.
+    if (body?.error?.code === "session_expired" || storeHasEnded()) {
+      markStoreEnded();
+      return "store-ended";
+    }
+    return "signed-out";
+  }
+  // A sleeping or failing server is like no connection: keep the session and try again later.
+  if (!res.ok) return res.status >= 500 ? "offline" : "signed-out";
   const { accessToken } = (await res.json()) as { accessToken: string };
 
   const known = getSession();
   if (known) {
     setSession({ ...known, accessToken });
-    return true;
+    return "refreshed";
   }
   // After a reload only the device record is left, so ask the API whose token this is.
-  const me = await send("/me", {}, accessToken).catch(() => null);
-  if (!me?.ok) return false;
+  let me: Response;
+  try {
+    me = await send("/me", {}, accessToken);
+  } catch {
+    return "offline";
+  }
+  if (!me.ok) return "signed-out";
   const { user, store } = (await me.json()) as Omit<SignedIn, "accessToken">;
   setSession({ accessToken, user, store, demoLogins: demoLoginsFor(store) });
-  return true;
+  return "refreshed";
 }
 
 /** Demo logins stay with the store they belong to. */

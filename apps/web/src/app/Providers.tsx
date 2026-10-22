@@ -9,7 +9,9 @@ export function Providers() {
       new QueryClient({
         defaultOptions: {
           // The API answers 4xx on purpose; only a lost connection is worth one more try.
-          queries: { retry: (failures, error) => failures < 1 && (error as { status?: number }).status === 0, refetchOnWindowFocus: false },
+          // "always": offline, a read still runs and fails fast (or the catalog falls back to its snapshot) instead of waiting paused.
+          queries: { networkMode: "always", retry: (failures, error) => failures < 1 && (error as { status?: number }).status === 0, refetchOnWindowFocus: false },
+          mutations: { networkMode: "always" },
         },
       }),
   );

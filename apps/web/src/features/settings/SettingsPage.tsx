@@ -1,10 +1,9 @@
 import { LogOut, UserRound } from "lucide-react";
 import { useId } from "react";
-import { useNavigate } from "react-router";
-import { logout } from "../../api/client";
 import { setTheme, useTheme, type Theme } from "../../app/ThemeToggle";
 import { initials } from "../../app/TopBar";
-import { clearSession, useSession } from "../../auth/session";
+import { useSession } from "../../auth/session";
+import { useSignOut } from "../../offline/useSignOut";
 import { DemoLoginsCard } from "../demo/DemoLoginsCard";
 
 const THEMES: { value: Theme; label: string }[] = [
@@ -15,18 +14,12 @@ const THEMES: { value: Theme; label: string }[] = [
 /** Settings (spec 11.3; reference "Profile"): who is signed in, the store, the theme, demo logins and log out. */
 export function SettingsPage() {
   const session = useSession();
-  const navigate = useNavigate();
   const theme = useTheme();
+  const { signOut, warning } = useSignOut();
   const infoId = useId();
   const themeId = useId();
   if (!session) return null;
   const { user, store } = session;
-
-  async function logOut() {
-    await logout();
-    clearSession();
-    navigate("/login", { replace: true });
-  }
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
@@ -35,7 +28,7 @@ export function SettingsPage() {
           <UserRound aria-hidden size={18} />
           My profile
         </p>
-        <button type="button" onClick={() => void logOut()} className="flex min-h-11 items-center gap-3 rounded-control px-4 text-left hover:bg-raised">
+        <button type="button" onClick={signOut} className="flex min-h-11 items-center gap-3 rounded-control px-4 text-left hover:bg-raised">
           <LogOut aria-hidden size={18} />
           Log out
         </button>
@@ -83,6 +76,7 @@ export function SettingsPage() {
 
         <DemoLoginsCard />
       </div>
+      {warning}
     </div>
   );
 }

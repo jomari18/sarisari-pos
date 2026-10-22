@@ -5,6 +5,8 @@ import { ApiError, api } from "../../api/client";
 import { Field, inputClass } from "../../components/Field";
 import { LoadProblem, Loading } from "../../components/LoadProblem";
 import { Notice } from "../../components/Notice";
+import { NeedsInternet } from "../../offline/NeedsInternet";
+import { useOnline } from "../../offline/status";
 import { pesoField, wholeNumber } from "../../lib/format";
 import { NewCategory } from "./CategoriesPage";
 import { MovementsPanel } from "./MovementsPanel";
@@ -93,6 +95,7 @@ export function ProductForm({ product, categories, onSaved, onReload, notice: la
   const [stale, setStale] = useState(false);
   const [addingCategory, setAddingCategory] = useState(false);
   const [busy, setBusy] = useState(false);
+  const online = useOnline();
   const form = useRef<HTMLFormElement>(null);
 
   const set = (name: FieldName, value: string) => {
@@ -229,7 +232,8 @@ export function ProductForm({ product, categories, onSaved, onReload, notice: la
         <Link to="/app/products" className="min-h-11 content-center px-2 text-muted underline underline-offset-2 hover:text-text">
           Cancel
         </Link>
-        <button type="submit" disabled={busy} className="min-h-12 rounded-control bg-accent px-6 font-medium text-accent-ink transition-opacity disabled:opacity-60">
+        {!online && <NeedsInternet />}
+        <button type="submit" disabled={busy || !online} className="min-h-12 rounded-control bg-accent px-6 font-medium text-accent-ink transition-opacity disabled:opacity-60">
           Save product
         </button>
       </div>

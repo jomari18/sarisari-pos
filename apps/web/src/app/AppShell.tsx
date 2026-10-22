@@ -1,8 +1,11 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
-import { Navigate, Outlet, useMatches, useNavigate, type UIMatch } from "react-router";
-import { logout, refreshSession } from "../api/client";
-import { clearSession, deviceRecord, getNotice, getSession, useSession } from "../auth/session";
+import { Navigate, Outlet, useMatches, type UIMatch } from "react-router";
+import { refreshSession } from "../api/client";
+import { deviceRecord, getNotice, getSession, setSession, storeHasEnded, useSession } from "../auth/session";
 import { DemoBanner } from "../features/demo/DemoBanner";
+import { startSyncLoop } from "../offline/syncEngine";
+import { useSignOut } from "../offline/useSignOut";
 import { MenuDrawer } from "./MenuDrawer";
 import { SideRail } from "./SideRail";
 import { TopBar } from "./TopBar";
@@ -18,15 +21,23 @@ function pageTitle(matches: UIMatch[]): string {
   return "SariSari POS";
 }
 
-/** After a reload only the device record is left: try the refresh cookie before sending anyone to sign in. */
+/**
+ * After a reload only the device record is left: try the refresh cookie before sending anyone to sign in.
+ * With no connection the device opens from what it remembers, to keep selling into the queue (spec 7.3).
+ */
 function useRestoredSession(): boolean {
   const [restoring, setRestoring] = useState(() => getSession() === null && getNotice() === null && deviceRecord() !== null);
   useEffect(() => {
     if (!restoring) return;
     let live = true;
-    void refreshSession().finally(() => {
-      if (live) setRestoring(false);
-    });
+    void refreshSession()
+      .then((outcome) => {
+        const record = deviceRecord();
+        if (outcome === "offline" && record && !storeHasEnded()) setSession({ accessToken: null, ...record });
+      })
+      .finally(() => {
+        if (live) setRestoring(false);
+      });
     return () => {
       live = false;
     };
@@ -38,16 +49,24 @@ function useRestoredSession(): boolean {
 export function AppShell() {
   const session = useSession();
   const restoring = useRestoredSession();
-  const navigate = useNavigate();
+  const client = useQueryClient();
   const title = pageTitle(useMatches());
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
-  const signOut = useCallback(() => {
-    void logout().then(() => {
-      clearSession();
-      navigate("/login", { replace: true });
+  const { signOut, warning } = useSignOut();
+  const signedInAs = session?.user.id;
+
+  // While someone is signed in, queued sales keep moving (spec 9); what they changed loads again once sent.
+  useEffect(() => {
+    if (!signedInAs) return;
+    return startSyncLoop({
+      onSynced: () => {
+        for (const key of ["catalog", "sales", "reports", "review", "products", "product", "movements", "ledger", "customers"]) {
+          void client.invalidateQueries({ queryKey: [key] });
+        }
+      },
     });
-  }, [navigate]);
+  }, [signedInAs, client]);
 
   useEffect(() => {
     document.title = `${title} · SariSari POS`;
@@ -75,6 +94,7 @@ export function AppShell() {
         </main>
       </div>
       <MenuDrawer open={menuOpen} role={role} onClose={closeMenu} onSignOut={signOut} />
+      {warning}
     </div>
   );
 }

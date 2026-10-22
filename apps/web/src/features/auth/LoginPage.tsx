@@ -2,7 +2,9 @@ import { Eye, EyeOff, Store } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import { ApiError, loginWith } from "../../api/client";
-import { getNotice, useSession } from "../../auth/session";
+import { getNotice, storeHasEnded, useSession } from "../../auth/session";
+import { StoreEndedScreen } from "../../offline/StoreEndedScreen";
+import { useDeviceQueue } from "../../offline/useSignOut";
 
 const field = "h-14 w-full rounded-control bg-raised px-5 text-base text-text placeholder:text-muted";
 
@@ -15,8 +17,11 @@ export function LoginPage() {
   const [showSecret, setShowSecret] = useState(false);
   const ids = { username: useId(), secret: useId(), error: useId() };
   const notice = getNotice();
+  const queued = useDeviceQueue() ?? 0;
 
   if (session) return <Navigate to="/app" replace />;
+  // Review Focus 5: an ended demo store's queued sales can never be sent.
+  if (queued > 0 && storeHasEnded()) return <StoreEndedScreen queued={queued} />;
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,6 +52,10 @@ export function LoginPage() {
           <p role="status" className="mt-8 rounded-control bg-raised px-5 py-3 text-sm text-warning">
             {notice}
           </p>
+        )}
+        {queued > 0 && (
+          // Spec 7.3: queued sales wait on the device until someone signs in again to send them.
+          <p className="mt-4 rounded-control bg-raised px-5 py-3 text-sm">{`Sign in to send ${queued} queued ${queued === 1 ? "sale" : "sales"}.`}</p>
         )}
 
         <form className="mt-8 flex flex-col gap-6" onSubmit={signIn} aria-describedby={error ? ids.error : undefined}>

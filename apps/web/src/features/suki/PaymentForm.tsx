@@ -3,6 +3,8 @@ import { useRef, useState, type FormEvent } from "react";
 import { ApiError, api } from "../../api/client";
 import { Field, inputClass } from "../../components/Field";
 import { Notice } from "../../components/Notice";
+import { NeedsInternet } from "../../offline/NeedsInternet";
+import { useOnline } from "../../offline/status";
 import { useSukiChanged } from "./queries";
 
 type Method = "CASH" | "GCASH";
@@ -17,6 +19,7 @@ const METHODS: { value: Method; label: string }[] = [
  */
 export function PaymentForm({ customer }: { customer: CustomerView }) {
   const sukiChanged = useSukiChanged();
+  const online = useOnline();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<Method>("CASH");
   const [paymentId, setPaymentId] = useState<string | null>(null);
@@ -113,7 +116,8 @@ export function PaymentForm({ customer }: { customer: CustomerView }) {
               {problem}
             </p>
           )}
-          <button type="submit" disabled={busy} className="min-h-12 rounded-control bg-accent px-6 font-medium text-accent-ink transition-opacity disabled:opacity-60">
+          {!online && <NeedsInternet />}
+          <button type="submit" disabled={busy || !online} className="min-h-12 rounded-control bg-accent px-6 font-medium text-accent-ink transition-opacity disabled:opacity-60">
             Record payment
           </button>
         </form>

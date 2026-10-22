@@ -1,6 +1,7 @@
 import { Menu } from "lucide-react";
 import type { Session } from "../auth/session";
 import { DemoBanner } from "../features/demo/DemoBanner";
+import { SyncBadge } from "../offline/SyncBadge";
 import { ThemeToggle } from "./ThemeToggle";
 
 /** "Mang Ben" → "MB", "Nena" → "N": the avatar letters everywhere a person is shown. */
@@ -19,7 +20,10 @@ export function TopBar({ title, session, onOpenMenu }: { title: string; session:
       <button type="button" aria-label="Open menu" onClick={onOpenMenu} className="grid size-11 place-items-center rounded-full bg-raised md:hidden">
         <Menu aria-hidden size={20} />
       </button>
-      <h1 className="min-w-0 flex-1 truncate text-xl font-medium md:text-2xl">{title}</h1>
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate text-xl font-medium md:text-2xl">{title}</h1>
+        <SyncBadge />
+      </div>
       <div className="hidden lg:block">
         <DemoBanner />
       </div>

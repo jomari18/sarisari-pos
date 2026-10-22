@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, SESSION_ENDED, api, refreshSession } from "../src/api/client";
-import { DEVICE_KEY, clearSession, getNotice, getSession, setSession } from "../src/auth/session";
+import { ApiError, SESSION_ENDED, STORE_ENDED, api, refreshSession } from "../src/api/client";
+import { DEVICE_KEY, clearSession, deviceRecord, getNotice, getSession, setSession } from "../src/auth/session";
 import { apiError, demoLogins, json, mockFetch, owner, store } from "./support/fetch";
 
 const signedIn = (accessToken = "t1") => setSession({ accessToken, user: owner, store });
@@ -72,11 +72,19 @@ describe("refresh on 401 (spec 7.2)", () => {
 
   it("ends the session when the refresh is refused, with a message for the login page", async () => {
     signedIn("old");
-    mockFetch(({ url }) => (url === "/api/auth/refresh" ? apiError(401, "session_expired", "This demo store has expired.") : unauthenticated()));
+    mockFetch(() => unauthenticated());
     await expect(api("/catalog")).rejects.toMatchObject({ status: 401 });
     expect(getSession()).toBeNull();
     expect(getNotice()).toBe(SESSION_ENDED);
     expect(SESSION_ENDED).toBe("Your session ended. Please sign in again.");
+  });
+
+  it("says the demo store has ended when the refresh answers session_expired", async () => {
+    signedIn("old");
+    mockFetch(({ url }) => (url === "/api/auth/refresh" ? apiError(401, "session_expired", "This demo store has expired.") : unauthenticated()));
+    await expect(api("/catalog")).rejects.toMatchObject({ status: 401 });
+    expect(getSession()).toBeNull();
+    expect(getNotice()).toBe(STORE_ENDED);
   });
 
   it("does not refresh for a wrong login: that 401 is the answer", async () => {
@@ -92,15 +100,29 @@ describe("refreshSession() after a reload", () => {
   it("rebuilds the session from the refresh cookie and /me, keeping the device's demo logins", async () => {
     localStorage.setItem(DEVICE_KEY, JSON.stringify({ user: owner, store, demoLogins }));
     const calls = mockFetch(({ url }) => (url === "/api/auth/refresh" ? json(200, { accessToken: "fresh" }) : json(200, { user: owner, store })));
-    await expect(refreshSession()).resolves.toBe(true);
+    await expect(refreshSession()).resolves.toBe("refreshed");
     expect(calls.map((c) => c.url)).toEqual(["/api/auth/refresh", "/api/me"]);
     expect(calls[1]!.headers.get("Authorization")).toBe("Bearer fresh");
     expect(getSession()).toEqual({ accessToken: "fresh", user: owner, store, demoLogins });
   });
 
-  it("answers false when there is no valid cookie", async () => {
+  it("answers signed-out when there is no valid cookie", async () => {
     mockFetch(() => unauthenticated());
-    await expect(refreshSession()).resolves.toBe(false);
+    await expect(refreshSession()).resolves.toBe("signed-out");
     expect(getSession()).toBeNull();
+  });
+
+  it("answers offline when the server cannot be reached, so the device can keep selling", async () => {
+    mockFetch(() => {
+      throw new TypeError("Failed to fetch");
+    });
+    await expect(refreshSession()).resolves.toBe("offline");
+  });
+
+  it("answers store-ended for an ended demo store and remembers it on the device", async () => {
+    localStorage.setItem(DEVICE_KEY, JSON.stringify({ user: owner, store }));
+    mockFetch(() => apiError(401, "session_expired", "This demo store has ended."));
+    await expect(refreshSession()).resolves.toBe("store-ended");
+    expect(new Date(deviceRecord()!.store.expiresAt).getTime()).toBeLessThanOrEqual(Date.now());
   });
 });

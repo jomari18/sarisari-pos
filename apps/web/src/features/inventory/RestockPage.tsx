@@ -4,6 +4,8 @@ import { ApiError, api } from "../../api/client";
 import { Field, inputClass } from "../../components/Field";
 import { LoadProblem, Loading } from "../../components/LoadProblem";
 import { Notice } from "../../components/Notice";
+import { NeedsInternet } from "../../offline/NeedsInternet";
+import { useOnline } from "../../offline/status";
 import { pesoField, wholeNumber } from "../../lib/format";
 import { BackToProducts, ProductSelect, StockNow, useChosenProduct } from "./parts";
 import { useProductChanged } from "./queries";
@@ -13,6 +15,7 @@ type Errors = { boxes?: string; pieces?: string; cost?: string };
 /** Spec 6.9: boxes × pack size plus loose pieces; the cost per piece becomes the product's cost. */
 function RestockForm({ product }: { product: ProductView }) {
   const productChanged = useProductChanged();
+  const online = useOnline();
   const [boxes, setBoxes] = useState("");
   const [pieces, setPieces] = useState("");
   const [cost, setCost] = useState(() => pesoField(product.costCentavos ?? 0));
@@ -82,7 +85,8 @@ function RestockForm({ product }: { product: ProductView }) {
           {problem}
         </p>
       )}
-      <button type="submit" disabled={busy} className="min-h-12 self-end rounded-control bg-accent px-6 font-medium text-accent-ink transition-opacity disabled:opacity-60">
+      {!online && <NeedsInternet />}
+      <button type="submit" disabled={busy || !online} className="min-h-12 self-end rounded-control bg-accent px-6 font-medium text-accent-ink transition-opacity disabled:opacity-60">
         Save restock
       </button>
     </form>

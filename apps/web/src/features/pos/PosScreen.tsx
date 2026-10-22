@@ -4,6 +4,8 @@ import { Search } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useReducer, useRef, useState, type KeyboardEvent } from "react";
 import { useSession } from "../../auth/session";
 import { Dialog } from "../../components/Dialog";
+import { manilaStamp } from "../../lib/format";
+import { CouldntSyncList } from "../../offline/CouldntSyncList";
 import { CATALOG_KEY, useCatalog } from "../catalog/useCatalog";
 import { ReceiptView } from "../receipt/ReceiptView";
 import { CartPanel } from "./CartPanel";
@@ -13,16 +15,16 @@ import { PaymentDialog } from "./PaymentDialog";
 import { ProductGrid } from "./ProductGrid";
 import { cartActions, cartReducer, type CartAction } from "./cart";
 import { searchProducts } from "./search";
-import { onlineSubmitter, type SaleSubmitter } from "./submitSale";
+import { offlineSubmitter, type SaleSubmitter } from "./submitSale";
 
 const isTextField = (target: EventTarget | null) =>
   target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 
 /** The POS (spec 10): search, category tiles and product cards on the left, the sale on the right. */
-export function PosScreen({ submit = onlineSubmitter }: { submit?: SaleSubmitter }) {
+export function PosScreen({ submit = offlineSubmitter }: { submit?: SaleSubmitter }) {
   const session = useSession();
   const queryClient = useQueryClient();
-  const { data, isLoading, error, refetch } = useCatalog();
+  const { data, isOffline, isLoading, error, refetch } = useCatalog();
   const [lines, dispatchCart] = useReducer(cartReducer, []);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -116,7 +118,14 @@ export function PosScreen({ submit = onlineSubmitter }: { submit?: SaleSubmitter
 
   return (
     <div className="flex flex-col gap-6 pb-48 lg:flex-row lg:items-start lg:pb-0">
-      <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <CouldntSyncList className="mb-4" />
+        {isOffline && (
+          // Spec 9: stock shown offline is the last known number, with its time.
+          <p role="status" className="mb-4 rounded-control bg-raised px-4 py-3 text-sm text-warning">
+            {`Offline. Stock as of ${manilaStamp(data.generatedAt).split(", ").at(-1)}.`}
+          </p>
+        )}
         <label className="relative block">
           <span className="sr-only">Search products</span>
           <Search aria-hidden size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />

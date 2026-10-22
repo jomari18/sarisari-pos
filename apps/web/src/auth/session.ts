@@ -1,7 +1,8 @@
 import type { DemoLogins, StoreView, UserView } from "@sari/shared";
 import { useSyncExternalStore } from "react";
 
-export type Session = { accessToken: string; user: UserView; store: StoreView; demoLogins?: DemoLogins };
+/** `accessToken` is null while the device works offline from what it remembers (spec 7.3). */
+export type Session = { accessToken: string | null; user: UserView; store: StoreView; demoLogins?: DemoLogins };
 
 /** What this device remembers between visits: no token, only who signed in last (spec 7.3). */
 export type DeviceRecord = { user: UserView; store: StoreView; demoLogins?: DemoLogins };
@@ -80,4 +81,22 @@ export function deviceRecord(): DeviceRecord | null {
 
 export function useSession(): Session | null {
   return useSyncExternalStore(subscribe, getSession, getSession);
+}
+
+/** The server said the demo store has ended: remember it, so this device stops trying to send (spec 9). */
+export function markStoreEnded(now = new Date()): void {
+  const record = deviceRecord();
+  if (!record) return;
+  try {
+    localStorage.setItem(DEVICE_KEY, JSON.stringify({ ...record, store: { ...record.store, expiresAt: now.toISOString() } }));
+  } catch {
+    // Nothing more to remember.
+  }
+  emit();
+}
+
+/** Demo stores end 24 h after they start; after that nothing queued on this device can be sent. */
+export function storeHasEnded(now = new Date()): boolean {
+  const record = deviceRecord();
+  return record !== null && new Date(record.store.expiresAt).getTime() <= now.getTime();
 }
