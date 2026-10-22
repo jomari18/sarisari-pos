@@ -15,7 +15,7 @@ export function requireProxySignature(secret: string): RequestHandler {
       await jwtVerify(token, key, { algorithms: ["HS256"], issuer: "netlify" });
       next();
     } catch {
-      next(new AppError("bad_proxy_signature", "This request must come through the SariSari POS website."));
+      next(new AppError("bad_proxy_signature", "This request must come through the ZariZari website."));
     }
   };
 }

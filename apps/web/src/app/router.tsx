@@ -37,7 +37,7 @@ function RequireOwner() {
 }
 
 const pages: RouteObject[] = [
-  { path: "/", element: <PagePlaceholder title="SariSari POS" /> },
+  { path: "/", element: <PagePlaceholder title="ZariZari" /> },
   { path: "/login", element: <LoginPage /> },
   {
     path: "/app",

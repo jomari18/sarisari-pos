@@ -23,7 +23,7 @@ describe("Netlify proxy signature", () => {
   it("refuses requests that did not come through the proxy", async () => {
     const res = await request(app).get("/api/me");
     expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe("bad_proxy_signature");
+    expect(res.body.error).toMatchObject({ code: "bad_proxy_signature", message: "This request must come through the ZariZari website." });
   });
 
   it("refuses a signature made with another secret", async () => {

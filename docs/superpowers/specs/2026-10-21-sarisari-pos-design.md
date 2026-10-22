@@ -417,13 +417,13 @@ Landing, Login, Demo welcome (demo logins card), Dashboard (owner), POS, Payment
 
 ### 11.4 3D tindahan (landing)
 
-- A low-poly sari-sari store made from primitive shapes: wooden walls, a corrugated roof, the classic barred window with a small serving opening, a painted "Sari-Sari Store" signboard (our brand), strips of hanging sachets in generic colors with no real logos, a bench outside, a bottle crate, dusk lighting with a warm bulb inside, and blue accent touches.
+- A low-poly sari-sari store made from primitive shapes: wooden walls, a corrugated roof, the classic barred window with a small serving opening, a painted "ZariZari" signboard (our brand) in the style of the classic "Sari-Sari Store" sign, strips of hanging sachets in generic colors with no real logos, a bench outside, a bottle crate, dusk lighting with a warm bulb inside, and blue accent touches.
 - Motion: a slow camera orbit, slight pointer parallax, and a scroll-driven move toward the window that leads into the "Try the demo" section.
 - Performance: lazy-loaded, device pixel ratio capped at 1.5, paused when the tab is hidden, and a static image fallback for reduced motion or no WebGL. The landing never blocks on the 3D scene.
 
 ### 11.5 Brand
 
-Working name "SariSari POS", with a simple storefront-awning mark in blue. A brand pass before launch may choose a final name (for example "Tindahan POS" or "SukiPOS"), logo, favicon and Open Graph image.
+Name: **ZariZari** (Jomari's choice on 21 October 2026, replacing the working name "SariSari POS"), with a simple storefront-awning mark in blue. The name is the brand everywhere people see it: the login card, the side rail, tab titles, the PWA manifest, the 3D signboard, the README and the social image. Internal identifiers (package names, storage keys, the repository) keep "sari", which people never see. The brand pass in Task 34 makes the logo, favicon and Open Graph image.
 
 ### 11.6 Accessibility and layout
 

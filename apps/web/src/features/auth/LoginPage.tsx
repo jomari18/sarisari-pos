@@ -41,7 +41,7 @@ export function LoginPage() {
     <main className="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-12 text-text">
       <Link to="/" className="flex items-center gap-3 text-accent">
         <Store aria-hidden size={44} />
-        <span className="text-3xl font-semibold uppercase tracking-[0.08em] sm:text-5xl">SariSari POS</span>
+        <span className="text-3xl font-semibold uppercase tracking-[0.08em] sm:text-5xl">ZariZari</span>
       </Link>
 
       <section className="mt-12 w-full max-w-[760px] rounded-[40px] bg-surface px-6 py-12 sm:mt-16 sm:px-28 sm:py-16">

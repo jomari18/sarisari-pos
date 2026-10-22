@@ -2,7 +2,7 @@ import type { Role } from "@sari/shared";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RouterProvider, createMemoryRouter } from "react-router";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { routes } from "../src/app/router";
 import { clearSession, setSession } from "../src/auth/session";
 
@@ -98,5 +98,19 @@ describe("phone layout", () => {
     expect(within(drawer).getByRole("button", { name: "Close menu" })).toHaveFocus();
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog", { name: "Menu" })).not.toBeInTheDocument();
+  });
+});
+
+describe("brand", () => {
+  it("names the app ZariZari in the rail and the tab title", async () => {
+    signInAs("OWNER");
+    renderAt("/app");
+    expect(await screen.findByRole("link", { name: "ZariZari home" })).toHaveTextContent("ZariZari");
+    await vi.waitFor(() => expect(document.title).toBe("Dashboard · ZariZari"));
+  });
+
+  it("names the app ZariZari on the login card", async () => {
+    renderAt("/login");
+    expect(await screen.findByText("ZariZari")).toBeInTheDocument();
   });
 });

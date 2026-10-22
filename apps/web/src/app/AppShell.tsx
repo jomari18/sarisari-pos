@@ -18,7 +18,7 @@ function pageTitle(matches: UIMatch[]): string {
     const title = (match.handle as RouteHandle | undefined)?.title;
     if (title) return title;
   }
-  return "SariSari POS";
+  return "ZariZari";
 }
 
 /**
@@ -69,7 +69,7 @@ export function AppShell() {
   }, [signedInAs, client]);
 
   useEffect(() => {
-    document.title = `${title} · SariSari POS`;
+    document.title = `${title} · ZariZari`;
   }, [title]);
 
   if (restoring) {

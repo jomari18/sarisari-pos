@@ -28,9 +28,9 @@ const RAIL_ICON = "grid size-7 place-items-center rounded-full [@media(max-heigh
 
 export function Brand() {
   return (
-    <Link to="/app" aria-label="SariSari POS home" className="flex flex-col items-center gap-1 text-accent">
+    <Link to="/app" aria-label="ZariZari home" className="flex flex-col items-center gap-1 text-accent">
       <Store aria-hidden size={26} />
-      <span className="text-sm font-semibold uppercase tracking-[0.14em]">SariSari</span>
+      <span className="text-sm font-semibold uppercase tracking-[0.14em]">ZariZari</span>
     </Link>
   );
 }

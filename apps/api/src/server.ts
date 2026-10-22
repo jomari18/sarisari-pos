@@ -7,5 +7,5 @@ const config = loadConfig(process.env);
 const app = createApp({ config, db: createDb(config.DATABASE_URL) });
 
 app.listen(config.PORT, () => {
-  logger.info({ port: config.PORT }, "SariSari POS API listening");
+  logger.info({ port: config.PORT }, "ZariZari API listening");
 });
