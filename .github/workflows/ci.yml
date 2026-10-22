@@ -115,3 +115,66 @@ jobs:
           path: sari-api.tar.gz
           retention-days: 1
           compression-level: 0
+
+  e2e:
+    name: End-to-end tests
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: sari
+          POSTGRES_PASSWORD: sari
+          POSTGRES_DB: sari_test
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd "pg_isready -U sari -d sari_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v7
+        with:
+          name: sari-api-image
+      # The image the image job built, on this job's empty database. vite preview signs /api with the local
+      # secret (no PROXY_SIGNING_SECRET here), so the container gets the same one. CI-only values.
+      - name: Start the API image
+        run: |
+          gunzip -c sari-api.tar.gz | docker load
+          docker run -d --name sari-api --network host \
+            -e DATABASE_URL=postgres://sari:sari@127.0.0.1:55433/sari_test \
+            -e JWT_SECRET=ci-only-jwt-secret-0123456789abcdefghij \
+            -e PROXY_SIGNING_SECRET=local-only-proxy-signing-secret-01234567 \
+            -e CLEANUP_SECRET=ci-only-cleanup-secret-0123456789abcdef \
+            -e IP_HASH_SALT=ci-only-ip-hash-salt-0123456789abcdefgh \
+            -e SITE_ORIGIN=http://localhost:4173 \
+            sari-api:ci
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/api/health; then exit 0; fi
+            sleep 1
+          done
+          docker logs sari-api
+          exit 1
+      - name: Build the web app
+        run: npm run build -w @sari/web
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: API logs
+        if: failure()
+        run: docker logs sari-api
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: e2e-traces
+          path: test-results/
+          retention-days: 7
