@@ -46,6 +46,8 @@ export default defineConfig(({ mode }) => {
         workbox: {
           // The manifest and its icons are added by the plugin itself.
           globPatterns: ["**/*.{js,css,html,woff2}"],
+          // The landing's 3D scene (three.js) is fetched only where it plays, never in the background for the POS.
+          globIgnores: ["**/Tindahan3D-*.js"],
           navigateFallback: "/index.html",
           navigateFallbackDenylist: [/^\/api\//],
           runtimeCaching: [],

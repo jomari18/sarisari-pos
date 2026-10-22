@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +26,12 @@ describe("service worker (spec 9)", () => {
     expect(sw).toMatch(/assets\/index-[\w-]+\.js/);
     expect(sw).toMatch(/assets\/index-[\w-]+\.css/);
     expect(sw).toMatch(/\.woff2/);
+  });
+
+  it("leaves out the landing's 3D scene, which is downloaded only where it plays (spec 11.4)", () => {
+    const scene = readdirSync(join(outDir, "assets")).find((file) => file.startsWith("Tindahan3D-"));
+    expect(scene).toBeDefined();
+    expect(sw).not.toContain(scene);
   });
 
   it("opens pages offline from index.html, but never answers /api, and caches no API responses", () => {

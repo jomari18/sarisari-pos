@@ -2,6 +2,7 @@ import { NotebookPen, ScanBarcode, WifiOff, type LucideIcon } from "lucide-react
 import { useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { deviceRecord, storeHasEnded } from "../auth/session";
+import { TindahanStage } from "./TindahanStage";
 import { TryDemoButton } from "./TryDemoButton";
 import { wakeApi } from "./wake";
 
@@ -69,10 +70,7 @@ export function LandingPage() {
             </div>
             <p className="text-sm text-muted">A demo store with 60 products, 12 suki and a month of sales is yours for 24 hours. No sign-up.</p>
           </div>
-          {/* Task 33 puts the 3D tindahan here; until it loads (or without WebGL) this is what shows. */}
-          <div className="grid aspect-[4/3] place-items-center rounded-[32px] bg-[radial-gradient(circle_at_50%_40%,var(--raised),var(--surface)_70%)]">
-            <img src="/icons/icon.svg" alt="" width={240} height={240} className="w-1/2 max-w-60 drop-shadow-2xl" />
-          </div>
+          <TindahanStage />
         </section>
 
         <ul aria-label="Features" className="grid gap-4 md:grid-cols-3">
