@@ -1,6 +1,7 @@
 import type { Role } from "@sari/shared";
-import { LogOut, Settings, Store } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { Link, useLocation } from "react-router";
+import { BrandMark } from "../components/BrandMark";
 import { isActive, navItems, type NavItem } from "./nav";
 
 /** The reference layout's rail item: an icon in a circle over its label; the current one sits on the accent. */
@@ -29,7 +30,7 @@ const RAIL_ICON = "grid size-7 place-items-center rounded-full [@media(max-heigh
 export function Brand() {
   return (
     <Link to="/app" aria-label="ZariZari home" className="flex flex-col items-center gap-1 text-accent">
-      <Store aria-hidden size={26} />
+      <BrandMark size={30} />
       <span className="text-sm font-semibold uppercase tracking-[0.14em]">ZariZari</span>
     </Link>
   );

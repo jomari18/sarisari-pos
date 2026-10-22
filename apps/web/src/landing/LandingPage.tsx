@@ -2,6 +2,7 @@ import { NotebookPen, ScanBarcode, WifiOff, type LucideIcon } from "lucide-react
 import { useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { deviceRecord, storeHasEnded } from "../auth/session";
+import { BrandMark } from "../components/BrandMark";
 import { TindahanStage } from "./TindahanStage";
 import { TryDemoButton } from "./TryDemoButton";
 import { wakeApi } from "./wake";
@@ -35,7 +36,7 @@ export function LandingPage() {
     <div className="flex min-h-dvh flex-col bg-bg text-text">
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-5 md:px-8">
         <Link to="/" className="flex items-center gap-3 font-semibold uppercase tracking-[0.12em] text-accent">
-          <img src="/icons/icon.svg" alt="" width={36} height={36} className="rounded-[10px]" />
+          <BrandMark size={34} />
           ZariZari
         </Link>
         <nav aria-label="Site" className="flex items-center gap-1">

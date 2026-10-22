@@ -4,6 +4,7 @@ import { RouterProvider } from "react-router/dom";
 import { useSession } from "../auth/session";
 import { LoginPage } from "../features/auth/LoginPage";
 import { SampleBarcodesPage } from "../features/barcodes/SampleBarcodesPage";
+import { CreditsPage } from "../features/credits/CreditsPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { LandingPage } from "../landing/LandingPage";
 import { CategoriesPage } from "../features/inventory/CategoriesPage";
@@ -11,6 +12,7 @@ import { CountPage } from "../features/inventory/CountPage";
 import { EditProductPage, NewProductPage } from "../features/inventory/ProductForm";
 import { ProductsPage } from "../features/inventory/ProductsPage";
 import { RestockPage } from "../features/inventory/RestockPage";
+import { NotFoundPage } from "../features/notFound/NotFoundPage";
 import { PosScreen } from "../features/pos/PosScreen";
 import { ReportsPage } from "../features/reports/ReportsPage";
 import { ReviewPage } from "../features/review/ReviewPage";
@@ -21,7 +23,6 @@ import { StaffPage } from "../features/staff/StaffPage";
 import { SukiLedgerPage } from "../features/suki/SukiLedgerPage";
 import { SukiListPage } from "../features/suki/SukiListPage";
 import { AppShell, type RouteHandle } from "./AppShell";
-import { PagePlaceholder } from "./Placeholder";
 import { Providers } from "./Providers";
 
 const page = (path: string, title: string, element: ReactNode): RouteObject => ({ path, element, handle: { title } satisfies RouteHandle });
@@ -69,8 +70,8 @@ const pages: RouteObject[] = [
     ],
   },
   { path: "/barcodes", element: <SampleBarcodesPage /> },
-  { path: "/credits", element: <PagePlaceholder title="Credits" /> },
-  { path: "*", element: <PagePlaceholder title="Page not found" /> },
+  { path: "/credits", element: <CreditsPage /> },
+  { path: "*", element: <NotFoundPage /> },
 ];
 
 /** Every page sits under the providers (the query cache). */

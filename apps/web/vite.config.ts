@@ -19,6 +19,14 @@ export default defineConfig(({ mode }) => {
   };
   return {
     plugins: [
+      {
+        // Social cards need absolute links: Netlify sets URL to the site's address during its build.
+        name: "site-url",
+        transformIndexHtml: {
+          order: "pre",
+          handler: (html) => html.replaceAll("%SITE_URL%", (process.env.URL ?? "http://localhost:4173").replace(/\/$/, "")),
+        },
+      },
       react(),
       tailwindcss(),
       // Spec 9: the app shell, fonts and icons are precached so the app opens offline. API answers are never
@@ -37,10 +45,12 @@ export default defineConfig(({ mode }) => {
           display: "standalone",
           background_color: "#111315",
           theme_color: "#111315",
-          // Task 34's brand pass replaces these with the final mark and PNG sizes.
+          // Made from public/favicon.svg by `npm run icons` (pwa-assets.config.ts).
           icons: [
-            { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
-            { src: "/icons/maskable.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
+            { src: "/pwa-64x64.png", sizes: "64x64", type: "image/png" },
+            { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+            { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+            { src: "/maskable-icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
           ],
         },
         workbox: {

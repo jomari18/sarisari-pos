@@ -1,8 +1,9 @@
-import { Eye, EyeOff, Store } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 import { ApiError, loginWith } from "../../api/client";
 import { getNotice, storeHasEnded, useSession } from "../../auth/session";
+import { BrandMark } from "../../components/BrandMark";
 import { StoreEndedScreen } from "../../offline/StoreEndedScreen";
 import { useOnline } from "../../offline/status";
 import { useDeviceQueue } from "../../offline/useSignOut";
@@ -42,7 +43,7 @@ export function LoginPage() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-12 text-text">
       <Link to="/" className="flex items-center gap-3 text-accent">
-        <Store aria-hidden size={44} />
+        <BrandMark size={52} />
         <span className="text-3xl font-semibold uppercase tracking-[0.08em] sm:text-5xl">ZariZari</span>
       </Link>
 
