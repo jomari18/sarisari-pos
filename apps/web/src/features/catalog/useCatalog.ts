@@ -1,8 +1,10 @@
 import type { CatalogSnapshot } from "@sari/shared";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { ApiError, api } from "../../api/client";
 import { useSession } from "../../auth/session";
 import { loadCatalog, saveCatalog } from "../../offline/catalog";
+import { useOnline } from "../../offline/status";
 
 export const CATALOG_KEY = ["catalog"] as const;
 
@@ -28,9 +30,17 @@ export function useCatalog(): { data?: CatalogSnapshot; isOffline: boolean; isLo
       }
     },
     staleTime: 60_000,
-    // Back online, the saved snapshot gives way to the server's at once.
-    refetchOnReconnect: "always",
   });
+
+  // Back online, the saved snapshot gives way to the server's at once. A device that opened offline never saw
+  // an "offline" event, so React Query's own refetch-on-reconnect would not notice the change.
+  const online = useOnline();
+  const fromSnapshot = query.data?.offline ?? false;
+  const { refetch } = query;
+  useEffect(() => {
+    if (online && fromSnapshot) void refetch();
+  }, [online, fromSnapshot, refetch]);
+
   return {
     data: query.data?.snapshot,
     isOffline: query.data?.offline ?? false,

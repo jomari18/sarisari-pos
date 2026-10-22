@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, Outlet, useMatches, type UIMatch } from "react-router";
 import { refreshSession } from "../api/client";
-import { deviceRecord, getNotice, getSession, setSession, storeHasEnded, useSession } from "../auth/session";
+import { deviceRecord, getNotice, getSession, restoreDeviceSession, useSession } from "../auth/session";
 import { DemoBanner } from "../features/demo/DemoBanner";
 import { startSyncLoop } from "../offline/syncEngine";
 import { useSignOut } from "../offline/useSignOut";
@@ -30,10 +30,11 @@ function useRestoredSession(): boolean {
   useEffect(() => {
     if (!restoring) return;
     let live = true;
-    void refreshSession()
+    // No connection at all: no point asking the server; open from the device record.
+    const refreshed = navigator.onLine ? refreshSession() : Promise.resolve("offline" as const);
+    void refreshed
       .then((outcome) => {
-        const record = deviceRecord();
-        if (outcome === "offline" && record && !storeHasEnded()) setSession({ accessToken: null, ...record });
+        if (outcome === "offline") restoreDeviceSession();
       })
       .finally(() => {
         if (live) setRestoring(false);

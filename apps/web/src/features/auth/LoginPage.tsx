@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate } from "react-router";
 import { ApiError, loginWith } from "../../api/client";
 import { getNotice, storeHasEnded, useSession } from "../../auth/session";
 import { StoreEndedScreen } from "../../offline/StoreEndedScreen";
+import { useOnline } from "../../offline/status";
 import { useDeviceQueue } from "../../offline/useSignOut";
 
 const field = "h-14 w-full rounded-control bg-raised px-5 text-base text-text placeholder:text-muted";
@@ -18,6 +19,7 @@ export function LoginPage() {
   const ids = { username: useId(), secret: useId(), error: useId() };
   const notice = getNotice();
   const queued = useDeviceQueue() ?? 0;
+  const online = useOnline();
 
   if (session) return <Navigate to="/app" replace />;
   // Review Focus 5: an ended demo store's queued sales can never be sent.
@@ -51,6 +53,11 @@ export function LoginPage() {
         {notice && (
           <p role="status" className="mt-8 rounded-control bg-raised px-5 py-3 text-sm text-warning">
             {notice}
+          </p>
+        )}
+        {!online && (
+          <p role="status" className="mt-8 rounded-control bg-raised px-5 py-3 text-sm text-warning">
+            You're offline. Sign in when you're back online.
           </p>
         )}
         {queued > 0 && (
@@ -111,7 +118,7 @@ export function LoginPage() {
 
           <button
             type="submit"
-            disabled={busy}
+            disabled={busy || !online}
             className="mx-auto min-h-14 min-w-36 rounded-control bg-accent px-8 font-medium text-accent-ink transition-opacity disabled:opacity-60"
           >
             {busy ? "Signing in…" : "Sign in"}

@@ -132,8 +132,9 @@ describe("selling offline (spec 9)", () => {
 
     refuse = false;
     await userEvent.click(within(list).getByRole("button", { name: "Try again" }));
+    // The row leaves the list as soon as it is queued again; the send that follows empties the outbox.
     await vi.waitFor(() => expect(screen.queryByRole("region", { name: "Couldn't sync" })).not.toBeInTheDocument());
-    expect(await offlineDb.outbox.count()).toBe(0);
+    await vi.waitFor(async () => expect(await offlineDb.outbox.count()).toBe(0));
   });
 });
 

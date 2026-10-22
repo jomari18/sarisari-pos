@@ -98,6 +98,8 @@ export function startSyncLoop(options: { onSynced?: () => void } = {}): () => vo
     if (document.visibilityState === "visible") wake();
   };
 
+  // The badge starts from the connection as it is now, not as it was when this module loaded.
+  updateSyncStatus({ online: navigator.onLine });
   window.addEventListener("online", wake);
   window.addEventListener("focus", wake);
   document.addEventListener("visibilitychange", shown);

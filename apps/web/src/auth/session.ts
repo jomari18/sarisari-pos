@@ -100,3 +100,15 @@ export function storeHasEnded(now = new Date()): boolean {
   const record = deviceRecord();
   return record !== null && new Date(record.store.expiresAt).getTime() <= now.getTime();
 }
+
+/**
+ * With no connection, the last person signed in on this device keeps working from what the device remembers
+ * (spec 7.3): no access token, so only selling into the queue works until the refresh cookie gets one.
+ */
+export function restoreDeviceSession(): Session | null {
+  const record = deviceRecord();
+  if (!record || storeHasEnded()) return null;
+  const session: Session = { accessToken: null, ...record };
+  setSession(session);
+  return session;
+}

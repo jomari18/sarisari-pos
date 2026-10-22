@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     // Tests run in Node (some read files), so they get Node types; the app itself does not.
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "vite-plugin-pwa/vanillajs", "node"]
   },
   "include": ["src", "test"]
 }
