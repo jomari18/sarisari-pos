@@ -1,3 +1,4 @@
+export * from "./demoCatalog.js";
 export * from "./ean13.js";
 export * from "./enums.js";
 export * from "./errors.js";

@@ -1,5 +1,5 @@
-import { ean13CheckDigit, manilaDate, manilaDayStart, type MovementReason, type PaymentMethod, type Role, type UtangKind } from "@sari/shared";
-import { CATALOG, SUKI } from "./catalogData.js";
+import { CATALOG, inStoreBarcode, manilaDate, manilaDayStart, type MovementReason, type PaymentMethod, type Role, type UtangKind } from "@sari/shared";
+import { SUKI } from "./catalogData.js";
 import { createRng, type Rng } from "./random.js";
 
 // Builds a month of believable history for a demo store (spec 7.5) from a seed alone, so tests can check
@@ -96,12 +96,6 @@ const GCASH_SHARE = 0.15;
 const DAILY_PAYMENT_CHANCE = 0.15;
 
 type DayEvent = { at: number; kind: "sale" } | { at: number; kind: "payment"; customer: number };
-
-/** EAN-13 with the in-store prefix 2, so a demo code never matches a real product. */
-export function inStoreBarcode(n: number): string {
-  const first12 = `2${String(n).padStart(11, "0")}`;
-  return `${first12}${ean13CheckDigit(first12)}`;
-}
 
 export function generateDemoData({ seed, now }: { seed: number; now: Date }): DemoData {
   const rng = createRng(seed);

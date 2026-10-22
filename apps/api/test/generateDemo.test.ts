@@ -1,4 +1,4 @@
-import { isValidEan13, manilaDate, manilaHour } from "@sari/shared";
+import { demoBarcodes, isValidEan13, manilaDate, manilaHour } from "@sari/shared";
 import { describe, expect, it } from "vitest";
 import { generateDemoData } from "../src/seed/generateDemo.js";
 import { mulberry32 } from "../src/seed/random.js";
@@ -27,6 +27,11 @@ describe("mulberry32", () => {
 });
 
 describe("generateDemoData", () => {
+  it("numbers barcodes exactly as the Sample barcodes page shows them", () => {
+    const seeded = data.products.filter((product) => product.barcode).map(({ name, barcode }) => ({ name, barcode }));
+    expect(seeded).toEqual(demoBarcodes().map(({ name, barcode }) => ({ name, barcode })));
+  });
+
   it("gives the same store for the same seed and a different one for another seed", () => {
     expect(generateDemoData({ seed: 20261021, now })).toEqual(data);
     expect(generateDemoData({ seed: 7, now })).not.toEqual(data);
