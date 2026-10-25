@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 import { isoTimeSchema, moneySchema, nameSchema } from "./common.js";
 
 const quantitySchema = z.int().min(1).max(999);

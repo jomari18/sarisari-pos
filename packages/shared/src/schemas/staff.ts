@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 import { PinSchema } from "./auth.js";
 import { nameSchema } from "./common.js";
 

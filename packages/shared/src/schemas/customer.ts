@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 import { nameSchema, noteSchema } from "./common.js";
 
 const phoneSchema = z.string().regex(/^(09|\+639)\d{9}$/, "Use a mobile number like 09171234567.");

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 import { normalizeName } from "../normalize.js";
 
 /** A trimmed, single-spaced name of at most `max` characters. */

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "../zod.js";
 
 const isRun = (digits: number[], step: number) => digits.every((d, i) => i === 0 || d === digits[i - 1]! + step);
 
