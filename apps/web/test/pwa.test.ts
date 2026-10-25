@@ -85,6 +85,12 @@ describe("the page's head (spec 11.5)", () => {
     for (const file of ["favicon.ico", "favicon.svg", "apple-touch-icon-180x180.png", "logo.svg"]) expect(existsSync(join(outDir, file))).toBe(true);
   });
 
+  // Without its own file the SPA fallback answers /robots.txt with the page's HTML, which crawlers cannot read.
+  it("has a robots.txt that lets crawlers read the public pages and skip the signed-in app", () => {
+    const robots = readFileSync(join(outDir, "robots.txt"), "utf8");
+    expect(robots.split("\n")).toEqual(expect.arrayContaining(["User-agent: *", "Allow: /", "Disallow: /app"]));
+  });
+
   it("describes the app and shows a 1200 x 630 social card, linked absolutely from the site's address", () => {
     expect(html).toMatch(/<meta name="description" content="[^"]{80,}" \/>/);
     expect(html).toContain('<meta property="og:title" content="ZariZari" />');

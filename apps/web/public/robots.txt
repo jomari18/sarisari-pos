@@ -1,0 +1,5 @@
+# ZariZari: the landing page, credits and sample barcodes are public; the app is behind a sign-in.
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /login
