@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { routes } from "../src/app/router";
 import { DEVICE_KEY, clearSession, setSession } from "../src/auth/session";
 import { offlineDb } from "../src/offline/db";
+import { offlineSubmitter } from "../src/features/pos/submitSale";
 import { enqueueSale, pendingCount } from "../src/offline/outbox";
 import { catalog, products } from "./support/catalog";
 import { apiError, bantay, json, owner, store } from "./support/fetch";
@@ -219,5 +220,15 @@ describe("signing out and sessions with sales still queued (spec 7.2, 7.3)", () 
     expect(await offlineDb.outbox.count()).toBe(0);
     expect(localStorage.getItem(DEVICE_KEY)).toBeNull();
     expect(api.urlsOf("POST", "/api/sales/sync")).toHaveLength(1);
+  });
+});
+
+describe("amounts the store cannot record (review I1)", () => {
+  it("refuses, rather than queues, a sale with cash far over its total, so it can never stall the device's queue", async () => {
+    setSession({ accessToken: "t1", user: bantay, store });
+    setOnline(false);
+    const sale = { ...cashSale(1), payment: { method: "CASH" as const, tenderedCentavos: 100_000_000_000 } };
+    await expect(offlineSubmitter(sale)).rejects.toThrow("That is more than ₱100,000 over the total. Check the cash given.");
+    expect(await pendingCount()).toBe(0);
   });
 });

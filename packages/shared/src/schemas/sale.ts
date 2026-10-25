@@ -25,6 +25,29 @@ export const PaymentInput = z.discriminatedUnion("method", [
 ]);
 export type PaymentInput = z.infer<typeof PaymentInput>;
 
+/**
+ * The most one sale may be worth, and how far cash given may exceed its total. Both keep every amount inside the
+ * database's columns, so a mistyped amount is refused as invalid instead of stalling a device's sync queue.
+ */
+export const MAX_SALE_CENTAVOS = 100_000_000;
+export const MAX_CASH_OVER_CENTAVOS = 10_000_000;
+
+const lineCentavos = (line: SaleLineInput) => line.quantity * ("custom" in line ? line.custom.unitPriceCentavos : line.unitPriceCentavos);
+
+type SaleAmounts = { items: SaleLineInput[]; totalCentavos: number; payment: PaymentInput };
+
+/** What is wrong with a sale's amounts, if anything; the device checks this before it queues a sale. */
+export function saleAmountIssue(sale: SaleAmounts): { path: (string | number)[]; message: string } | null {
+  const worth = sale.items.reduce((sum, line) => sum + lineCentavos(line), 0);
+  if (Math.max(worth, sale.totalCentavos) > MAX_SALE_CENTAVOS) return { path: ["totalCentavos"], message: "A sale can be worth at most ₱1,000,000." };
+  if (sale.payment.method !== "CASH") return null;
+  if (sale.payment.tenderedCentavos < sale.totalCentavos) return { path: ["payment", "tenderedCentavos"], message: "The cash given is less than the total." };
+  if (sale.payment.tenderedCentavos > sale.totalCentavos + MAX_CASH_OVER_CENTAVOS) {
+    return { path: ["payment", "tenderedCentavos"], message: "That is more than ₱100,000 over the total. Check the cash given." };
+  }
+  return null;
+}
+
 export const SaleInput = z
   .strictObject({
     id: z.uuid(),
@@ -34,9 +57,8 @@ export const SaleInput = z
     payment: PaymentInput,
   })
   .superRefine((sale, ctx) => {
-    if (sale.payment.method === "CASH" && sale.payment.tenderedCentavos < sale.totalCentavos) {
-      ctx.addIssue({ code: "custom", path: ["payment", "tenderedCentavos"], message: "The cash given is less than the total." });
-    }
+    const issue = saleAmountIssue(sale);
+    if (issue) ctx.addIssue({ code: "custom", ...issue });
   });
 export type SaleInput = z.infer<typeof SaleInput>;
 

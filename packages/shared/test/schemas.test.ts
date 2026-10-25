@@ -71,6 +71,22 @@ describe("sales", () => {
     expect(result.error?.issues[0]?.path).toEqual(["payment", "tenderedCentavos"]);
   });
 
+  // Review I1: an amount past what the store's columns hold must be refused as invalid, or one mistyped sale
+  // stalls a device's sync queue behind a server error.
+  it("refuses a sale worth more than ₱1,000,000", () => {
+    const big = { productId: uuid(), quantity: 999, unitPriceCentavos: 10_000_000 };
+    const result = SaleInput.safeParse(sale({ items: [big], totalCentavos: 9_990_000_000, payment: { method: "GCASH" } }));
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["totalCentavos"]);
+  });
+
+  it("refuses cash more than ₱100,000 over the total, on the tendered field", () => {
+    const result = SaleInput.safeParse(sale({ payment: { method: "CASH", tenderedCentavos: 100_000_000_000 } }));
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["payment", "tenderedCentavos"]);
+    expect(SaleInput.safeParse(sale({ payment: { method: "CASH", tenderedCentavos: 10_001_500 } })).success).toBe(true);
+  });
+
   it("needs the fields of the chosen payment method", () => {
     expect(PaymentInput.safeParse({ method: "CASH" }).success).toBe(false);
     expect(PaymentInput.safeParse({ method: "GCASH" }).success).toBe(true);

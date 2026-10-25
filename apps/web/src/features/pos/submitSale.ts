@@ -1,4 +1,4 @@
-import type { PaymentInput, SaleInput, SaleView } from "@sari/shared";
+import { saleAmountIssue, type PaymentInput, type SaleInput, type SaleView } from "@sari/shared";
 import { ApiError, api } from "../../api/client";
 import { getSession } from "../../auth/session";
 import { loadCatalog } from "../../offline/catalog";
@@ -76,6 +76,9 @@ async function queue(sale: SaleInput): Promise<{ sale: SaleView; queued: boolean
  * was lost may be queued after the server recorded it: the same id comes back as a duplicate and counts once.
  */
 export const offlineSubmitter: SaleSubmitter = async (sale) => {
+  // An amount the store cannot record is refused here, before it can reach the queue and stall it (review I1).
+  const issue = saleAmountIssue(sale);
+  if (issue) throw new ApiError(400, "invalid_input", issue.message, { field: String(issue.path.at(-1)) });
   if (!navigator.onLine) return queue(sale);
   try {
     return await onlineSubmitter(sale);
