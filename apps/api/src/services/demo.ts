@@ -15,7 +15,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const DEMOS_PER_IP_PER_DAY = 5;
 const MAX_ACTIVE_STORES = 200;
 const CODE_ATTEMPTS = 5;
-const BATCH_SIZE = 1000;
 /** Expired stores removed while a visitor waits; the daily cleanup job removes the rest. */
 const CLEANUP_ON_CREATE = 5;
 
@@ -119,8 +118,8 @@ function insertDemoStore(db: Db, code: string, s: Seeded): Promise<{ store: Stor
   );
 }
 
-/** Turns the generator's array indexes into ids and inserts the rows in batches. */
-async function insertHistory(tx: Tx, storeId: string, users: Record<Role, string>, data: DemoData): Promise<void> {
+/** Turns the generator's array indexes into ids and inserts the rows, the large tables in one statement each. */
+export async function insertHistory(tx: Tx, storeId: string, users: Record<Role, string>, data: DemoData): Promise<void> {
   const categoryIds = data.categories.map(() => randomUUID());
   const productIds = data.products.map(() => randomUUID());
   const customerIds = data.customers.map(() => randomUUID());
@@ -155,72 +154,78 @@ async function insertHistory(tx: Tx, storeId: string, users: Record<Role, string
       createdAt: c.createdAt,
     })),
   });
-  await inBatches(
-    data.sales.map((s, i) => ({
-      id: saleIds[i]!,
-      storeId,
-      cashierId: users[s.cashier],
-      receiptNo: s.receiptNo,
-      soldAt: s.soldAt,
-      receivedAt: s.soldAt,
-      source: "ONLINE" as const,
-      method: s.method,
-      totalCentavos: s.totalCentavos,
-      tenderedCentavos: s.tenderedCentavos,
-      changeCentavos: s.changeCentavos,
-      gcashRef: s.gcashRef,
-      customerId: s.customer === null ? null : customerIds[s.customer]!,
-    })),
-    (batch) => tx.sale.createMany({ data: batch }),
+  // The month of sales and everything they moved is most of the store: each table goes in as one statement
+  // that unpacks arrays, so Postgres does the work. Through Prisma's createMany the same rows took about 9 s
+  // of Render's 0.1 CPU, past the 5 s "Try the demo" budget and close to the proxy's 26 s.
+  const iso = (date: Date) => date.toISOString();
+  await tx.$executeRawUnsafe(
+    `INSERT INTO "Sale" ("id", "storeId", "cashierId", "receiptNo", "soldAt", "receivedAt", "source", "method",
+       "totalCentavos", "tenderedCentavos", "changeCentavos", "gcashRef", "customerId")
+     SELECT t.id, $1::uuid, t.cashier, t.receipt, t.sold, t.sold, 'ONLINE'::"SaleSource", t.method::"PaymentMethod",
+       t.total, t.tendered, t.change, t.gcash, t.customer
+     FROM unnest($2::uuid[], $3::uuid[], $4::int[], $5::timestamptz[], $6::text[], $7::int[], $8::int[], $9::int[], $10::text[], $11::uuid[])
+       AS t(id, cashier, receipt, sold, method, total, tendered, change, gcash, customer)`,
+    storeId,
+    saleIds,
+    data.sales.map((sale) => users[sale.cashier]),
+    data.sales.map((sale) => sale.receiptNo),
+    data.sales.map((sale) => iso(sale.soldAt)),
+    data.sales.map((sale) => sale.method),
+    data.sales.map((sale) => sale.totalCentavos),
+    data.sales.map((sale) => sale.tenderedCentavos),
+    data.sales.map((sale) => sale.changeCentavos),
+    data.sales.map((sale) => sale.gcashRef),
+    data.sales.map((sale) => (sale.customer === null ? null : customerIds[sale.customer]!)),
   );
-  await inBatches(
-    data.sales.flatMap((s, i) =>
-      s.lines.map((line, position) => ({
-        saleId: saleIds[i]!,
-        line: position,
-        productId: productIds[line.product]!,
-        name: line.name,
-        quantity: line.quantity,
-        unitPriceCentavos: line.unitPriceCentavos,
-        unitCostCentavos: line.unitCostCentavos,
-        lineTotalCentavos: line.lineTotalCentavos,
-      })),
-    ),
-    (batch) => tx.saleItem.createMany({ data: batch }),
+  const lines = data.sales.flatMap((sale, i) => sale.lines.map((line, position) => ({ sale: saleIds[i]!, position, line })));
+  await tx.$executeRawUnsafe(
+    `INSERT INTO "SaleItem" ("id", "saleId", "line", "productId", "name", "quantity", "unitPriceCentavos", "unitCostCentavos", "lineTotalCentavos")
+     SELECT gen_random_uuid(), t.sale, t.position, t.product, t.name, t.quantity, t.price, t.cost, t.total
+     FROM unnest($1::uuid[], $2::int[], $3::uuid[], $4::text[], $5::int[], $6::int[], $7::int[], $8::int[])
+       AS t(sale, position, product, name, quantity, price, cost, total)`,
+    lines.map((l) => l.sale),
+    lines.map((l) => l.position),
+    lines.map((l) => productIds[l.line.product]!),
+    lines.map((l) => l.line.name),
+    lines.map((l) => l.line.quantity),
+    lines.map((l) => l.line.unitPriceCentavos),
+    lines.map((l) => l.line.unitCostCentavos),
+    lines.map((l) => l.line.lineTotalCentavos),
   );
-  await inBatches(
-    data.movements.map((m) => ({
-      storeId,
-      productId: productIds[m.product]!,
-      change: m.change,
-      reason: m.reason,
-      saleId: saleId(m.sale),
-      userId: users[m.user],
-      note: m.note,
-      stockAfter: m.stockAfter,
-      createdAt: m.createdAt,
-    })),
-    (batch) => tx.stockMovement.createMany({ data: batch }),
+  // Stock history and the ledger read in seq order: rows go in in the generator's order (WITH ORDINALITY).
+  await tx.$executeRawUnsafe(
+    `INSERT INTO "StockMovement" ("id", "storeId", "productId", "change", "reason", "saleId", "userId", "note", "stockAfter", "createdAt")
+     SELECT gen_random_uuid(), $1::uuid, t.product, t.change, t.reason::"MovementReason", t.sale, t.author, t.note, t.after, t.at
+     FROM unnest($2::uuid[], $3::int[], $4::text[], $5::uuid[], $6::uuid[], $7::text[], $8::int[], $9::timestamptz[])
+       WITH ORDINALITY AS t(product, change, reason, sale, author, note, after, at, position)
+     ORDER BY t.position`,
+    storeId,
+    data.movements.map((m) => productIds[m.product]!),
+    data.movements.map((m) => m.change),
+    data.movements.map((m) => m.reason),
+    data.movements.map((m) => saleId(m.sale)),
+    data.movements.map((m) => users[m.user]),
+    data.movements.map((m) => m.note),
+    data.movements.map((m) => m.stockAfter),
+    data.movements.map((m) => iso(m.createdAt)),
   );
-  await inBatches(
-    data.utangEntries.map((e) => ({
-      storeId,
-      customerId: customerIds[e.customer]!,
-      kind: e.kind,
-      amountCentavos: e.amountCentavos,
-      method: e.method,
-      saleId: saleId(e.sale),
-      userId: users[e.user],
-      note: e.note,
-      balanceAfter: e.balanceAfter,
-      createdAt: e.createdAt,
-    })),
-    (batch) => tx.utangEntry.createMany({ data: batch }),
+  await tx.$executeRawUnsafe(
+    `INSERT INTO "UtangEntry" ("id", "storeId", "customerId", "kind", "amountCentavos", "method", "saleId", "userId", "note", "balanceAfter", "createdAt")
+     SELECT gen_random_uuid(), $1::uuid, t.customer, t.kind::"UtangKind", t.amount, t.method::"PaymentMethod", t.sale, t.author, t.note, t.after, t.at
+     FROM unnest($2::uuid[], $3::text[], $4::int[], $5::text[], $6::uuid[], $7::uuid[], $8::text[], $9::int[], $10::timestamptz[])
+       WITH ORDINALITY AS t(customer, kind, amount, method, sale, author, note, after, at, position)
+     ORDER BY t.position`,
+    storeId,
+    data.utangEntries.map((e) => customerIds[e.customer]!),
+    data.utangEntries.map((e) => e.kind),
+    data.utangEntries.map((e) => e.amountCentavos),
+    data.utangEntries.map((e) => e.method),
+    data.utangEntries.map((e) => saleId(e.sale)),
+    data.utangEntries.map((e) => users[e.user]),
+    data.utangEntries.map((e) => e.note),
+    data.utangEntries.map((e) => e.balanceAfter),
+    data.utangEntries.map((e) => iso(e.createdAt)),
   );
-}
-
-async function inBatches<T>(rows: T[], insert: (batch: T[]) => Promise<unknown>): Promise<void> {
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) await insert(rows.slice(i, i + BATCH_SIZE));
 }
 
 /**
