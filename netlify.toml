@@ -25,10 +25,13 @@
   to = "/index.html"
   status = 200
 
+# The free plan's "Powered by Netlify" badge draws in a srcdoc iframe that inherits this policy. Its one inline
+# script is allowed by its hash (if Netlify changes the badge, the console names the new hash), and its card's
+# form opens app.netlify.com. Nothing else inline may run.
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://zarizari-api.onrender.com; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-BkKP2XO6WOEc3kXOiLr2ZoY83hamalKjPY9xBcbXVuw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://zarizari-api.onrender.com; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://app.netlify.com"
     Permissions-Policy = "camera=(self), microphone=(), geolocation=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Content-Type-Options = "nosniff"

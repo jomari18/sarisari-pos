@@ -52,10 +52,20 @@ describe("netlify.toml (spec 4 and 14)", () => {
   it("sends a strict Content Security Policy: scripts only from the site, no eval, no framing", () => {
     const policy = csp();
     expect(policy["default-src"]).toEqual(["'self'"]);
-    expect(policy["script-src"]).toEqual(["'self'"]);
+    // Files from the site, plus inline scripts named by their hash: never 'unsafe-inline' or a host.
+    expect(policy["script-src"]![0]).toBe("'self'");
+    expect(policy["script-src"]!.slice(1).every((source) => /^'sha256-[A-Za-z0-9+/]+=*'$/.test(source))).toBe(true);
     expect(policy["worker-src"]).toEqual(["'self'"]);
     expect(policy["frame-ancestors"]).toEqual(["'none'"]);
     expect(headersFor("/*")["Content-Security-Policy"]).not.toContain("unsafe-eval");
+  });
+
+  // The free plan's "Powered by Netlify" badge draws in a srcdoc iframe that inherits this policy: its one
+  // inline script is allowed by hash, and its card's form opens Netlify's start page.
+  it("lets Netlify's free-plan badge run without opening the policy to inline scripts", () => {
+    const policy = csp();
+    expect(policy["script-src"]).toContain("'sha256-BkKP2XO6WOEc3kXOiLr2ZoY83hamalKjPY9xBcbXVuw='");
+    expect(policy["form-action"]).toEqual(["'self'", "https://app.netlify.com"]);
   });
 
   it("lets the scanner use the camera and nothing else, over HTTPS only", () => {
