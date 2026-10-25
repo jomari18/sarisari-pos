@@ -1,5 +1,5 @@
 import { saleAmountIssue, type PaymentInput, type SaleInput, type SaleView } from "@sari/shared";
-import { ApiError, api } from "../../api/client";
+import { ApiError, api, isUnreachable } from "../../api/client";
 import { getSession } from "../../auth/session";
 import { loadCatalog } from "../../offline/catalog";
 import { enqueueSale } from "../../offline/outbox";
@@ -83,7 +83,7 @@ export const offlineSubmitter: SaleSubmitter = async (sale) => {
   try {
     return await onlineSubmitter(sale);
   } catch (err) {
-    if (err instanceof ApiError && err.status === 0) return queue(sale);
+    if (isUnreachable(err)) return queue(sale);
     throw err;
   }
 };

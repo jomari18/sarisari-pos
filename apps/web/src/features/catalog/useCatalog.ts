@@ -1,7 +1,7 @@
 import type { CatalogSnapshot } from "@sari/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { ApiError, api } from "../../api/client";
+import { ApiError, api, isUnreachable } from "../../api/client";
 import { useSession } from "../../auth/session";
 import { loadCatalog, saveCatalog } from "../../offline/catalog";
 import { useOnline } from "../../offline/status";
@@ -24,7 +24,7 @@ export function useCatalog(): { data?: CatalogSnapshot; isOffline: boolean; isLo
         if (storeId) void saveCatalog(storeId, snapshot);
         return { snapshot, offline: false };
       } catch (err) {
-        const saved = err instanceof ApiError && err.status === 0 && storeId ? await loadCatalog(storeId) : undefined;
+        const saved = isUnreachable(err) && storeId ? await loadCatalog(storeId) : undefined;
         if (saved) return { snapshot: saved.snapshot, offline: true };
         throw err;
       }

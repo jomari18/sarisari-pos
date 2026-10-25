@@ -1,5 +1,5 @@
 import type { SyncResult } from "@sari/shared";
-import { ApiError, api, endSessionFor, refreshSession } from "../api/client";
+import { api, endSessionFor, isUnreachable, refreshSession } from "../api/client";
 import { getSession } from "../auth/session";
 import { nextBatch, pendingCount, refreshCounts, settle } from "./outbox";
 import { getSyncStatus, updateSyncStatus } from "./status";
@@ -49,7 +49,7 @@ async function send(): Promise<FlushResult> {
         results = await api<SyncResult[]>("/sales/sync", { method: "POST", json: { sales: batch.map((row) => row.sale) } });
         updateSyncStatus({ reachable: true });
       } catch (err) {
-        if (err instanceof ApiError && err.status === 0) updateSyncStatus({ reachable: false });
+        if (isUnreachable(err)) updateSyncStatus({ reachable: false });
         throw err;
       }
       const counts = await settle(results);

@@ -49,6 +49,14 @@ async function send(path: string, init: ApiInit, token: string | undefined): Pro
   }
 }
 
+/**
+ * No answer from the API itself: no connection (status 0), or Netlify's proxy giving up while the sleeping API
+ * wakes (502–504 with its own page, not the API's JSON). Wherever the app has an offline answer, it uses it.
+ */
+export function isUnreachable(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 0 || (err.status >= 502 && err.status <= 504 && err.code === "service_unavailable"));
+}
+
 async function toApiError(res: Response): Promise<ApiError> {
   const body = (await res.json().catch(() => null)) as ApiErrorBody | null;
   const error = body?.error;

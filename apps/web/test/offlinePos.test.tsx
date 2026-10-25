@@ -232,3 +232,25 @@ describe("amounts the store cannot record (review I1)", () => {
     expect(await pendingCount()).toBe(0);
   });
 });
+
+// Review I2: a sleeping Render API makes Netlify's proxy answer 502–504 with an HTML page, not a lost connection.
+const proxyTimeout = () => new Response("<html>Gateway timeout</html>", { status: 504, headers: { "Content-Type": "text/html" } });
+
+describe("while the API wakes up behind the proxy (review I2)", () => {
+  it("opens the POS from the saved catalog when the proxy times out", async () => {
+    signIn(bantay);
+    await offlineDb.catalogs.put({ storeId: store.id, snapshot: { ...catalog, generatedAt: SAVED_AT }, savedAt: SAVED_AT });
+    serve({ "GET /api/catalog": proxyTimeout });
+    openAt("/app/pos");
+    expect(await screen.findByText("Offline. Stock as of 10:42 AM.")).toBeInTheDocument();
+  });
+
+  it("queues a sale when the proxy times out, to send once the API is up", async () => {
+    signIn(bantay);
+    setOnline(true);
+    serve({ "POST /api/sales": proxyTimeout });
+    const result = await offlineSubmitter(cashSale(7));
+    expect(result.queued).toBe(true);
+    expect(await pendingCount()).toBe(1);
+  });
+});
