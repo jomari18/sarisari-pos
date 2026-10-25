@@ -1,0 +1,41 @@
+# Netlify serves the web app and proxies /api to the API on Render (spec 4 and 14). PROXY_SIGNING_SECRET is set in
+# Netlify's site settings (runtime scope), never here; it signs every proxied request. <render-host> is the Render
+# service's hostname, filled in once the service exists.
+
+[build]
+  # From the workspace root, so npm installs the shared package with the app.
+  command = "npm run build -w @sari/web"
+  publish = "apps/web/dist"
+
+[build.environment]
+  # The landing page wakes the sleeping API directly, without the proxy's 26-second limit.
+  VITE_API_WAKE_URL = "https://<render-host>/api/health"
+
+# Every API call goes to Render through Netlify, which signs it so the API knows where it came from.
+[[redirects]]
+  from = "/api/*"
+  to = "https://<render-host>/api/:splat"
+  status = 200
+  force = true
+  signed = "PROXY_SIGNING_SECRET"
+
+# Every other address is a page of the app.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://<render-host>; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    Permissions-Policy = "camera=(self), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Vite names these files after their content, so a file never changes and browsers may keep it for a year.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

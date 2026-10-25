@@ -1,0 +1,32 @@
+# Render Blueprint for the ZariZari API (spec 14): the same Docker image as docker compose and CI, on the free
+# plan. The container runs `prisma migrate deploy` before it starts. Every variable below is entered in Render's
+# dashboard when the service is created (sync: false), never in this file.
+services:
+  - type: web
+    name: zarizari-api
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    autoDeployTrigger: checksPass
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      # Neon: the pooled connection for the app, the direct one for migrations.
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      # Random values of 32+ characters; PROXY_SIGNING_SECRET is also set in Netlify, CLEANUP_SECRET in GitHub.
+      - key: JWT_SECRET
+        sync: false
+      - key: PROXY_SIGNING_SECRET
+        sync: false
+      - key: CLEANUP_SECRET
+        sync: false
+      - key: IP_HASH_SALT
+        sync: false
+      # The Netlify site's address, for the wake-up call's CORS.
+      - key: SITE_ORIGIN
+        sync: false
