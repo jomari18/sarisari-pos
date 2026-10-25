@@ -87,9 +87,10 @@ describe("config", () => {
 describe("clientIp", () => {
   const fake = (headers: Record<string, string>) => ({ headers, socket: { remoteAddress: "10.0.0.9" } }) as never;
 
-  it("prefers Netlify's client IP header, then X-Forwarded-For, then the socket", () => {
+  it("prefers Netlify's client IP header, then the socket, never X-Forwarded-For", () => {
     expect(clientIp(fake({ "x-nf-client-connection-ip": "203.0.113.7", "x-forwarded-for": "198.51.100.1" }))).toBe("203.0.113.7");
-    expect(clientIp(fake({ "x-forwarded-for": "198.51.100.1, 10.0.0.1" }))).toBe("198.51.100.1");
+    // Review I3: the leftmost X-Forwarded-For entry is whatever the caller wrote, so it never names the visitor.
+    expect(clientIp(fake({ "x-forwarded-for": "198.51.100.1, 10.0.0.1" }))).toBe("10.0.0.9");
     expect(clientIp(fake({}))).toBe("10.0.0.9");
   });
 });
