@@ -19,6 +19,8 @@ try {
   // the hero, so the camera is at rest; the scene draws at its 1.5 pixel-ratio cap, making a 1200 x 900 picture.
   const page = await browser.newPage({ viewport: { width: 864, height: 1400 }, deviceScaleFactor: 1.5, reducedMotion: "no-preference" });
   await page.goto(url);
+  // The scene starts on the visitor's first move; a key press starts it without tilting the camera as a mouse would.
+  await page.keyboard.press("Shift");
   const canvas = page.locator("[data-testid=tindahan-canvas] canvas");
   await canvas.waitFor();
   // The picture is square-cornered; the page rounds it wherever it shows it.

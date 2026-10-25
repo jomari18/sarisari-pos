@@ -38,6 +38,9 @@ function motionSetting(reduce: boolean) {
   };
 }
 
+/** The visitor's first sign of life on the page: the scene waits for one, so it never slows the page's start. */
+const visitorMoves = (event = "pointermove") => act(() => void window.dispatchEvent(new Event(event)));
+
 function webgl(available: boolean) {
   const context = { getExtension: () => ({ loseContext: () => {} }) };
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(((kind: string) => (available && kind.startsWith("webgl") ? context : null)) as never);
@@ -72,10 +75,15 @@ describe("the tindahan on the landing page (spec 11.4)", () => {
     expect(chunk.imported).toBe(false);
   });
 
-  it("otherwise loads the 3D scene, showing the still while it loads", async () => {
+  it("waits for the visitor to move before loading the 3D scene, showing the still until then", async () => {
     motionSetting(false);
     webgl(true);
     render(<TindahanStage />);
+    expect(screen.getByRole("img", { name: STILL })).toHaveAttribute("src", "/tindahan-still.webp");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(chunk.imported).toBe(false);
+
+    visitorMoves();
     const stage = screen.getByTestId("tindahan-canvas");
     expect(within(stage).getByRole("img", { name: STILL })).toBeInTheDocument();
     expect(await within(stage).findByTestId("scene")).toBeInTheDocument();
@@ -83,10 +91,19 @@ describe("the tindahan on the landing page (spec 11.4)", () => {
     expect(within(stage).queryByRole("img", { name: STILL })).not.toBeInTheDocument();
   });
 
+  it.each(["scroll", "touchstart", "keydown", "pointerdown", "wheel"])("starts the scene on a %s too", async (event) => {
+    motionSetting(false);
+    webgl(true);
+    render(<TindahanStage />);
+    visitorMoves(event);
+    expect(await screen.findByTestId("scene")).toBeInTheDocument();
+  });
+
   it("swaps the scene for the still as soon as the visitor turns on reduced motion", async () => {
     const setReduce = motionSetting(false);
     webgl(true);
     render(<TindahanStage />);
+    visitorMoves();
     expect(await screen.findByTestId("scene")).toBeInTheDocument();
     setReduce(true);
     expect(screen.queryByTestId("scene")).not.toBeInTheDocument();
@@ -99,6 +116,7 @@ describe("the tindahan on the landing page (spec 11.4)", () => {
     motionSetting(false);
     webgl(true);
     render(<TindahanStage />);
+    visitorMoves();
     const stage = screen.getByTestId("tindahan-canvas");
     await vi.waitFor(() => expect(chunk.renders).toBeGreaterThan(0));
     expect(await within(stage).findByRole("img", { name: STILL })).toBeInTheDocument();
