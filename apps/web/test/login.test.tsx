@@ -27,7 +27,7 @@ describe("login page", () => {
   it("signs in and opens the app", async () => {
     const calls = mockFetch(() => json(200, { accessToken: "t1", user: owner, store }));
     const router = renderAt("/login");
-    await userEvent.type(screen.getByLabelText("Username"), "mayari.7k2f");
+    await userEvent.type(await screen.findByLabelText("Username"), "mayari.7k2f");
     await userEvent.type(screen.getByLabelText("Password or PIN"), "Xy7kPq2mRt8vNw4z");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
 
@@ -39,7 +39,7 @@ describe("login page", () => {
   it("shows the server's message for a wrong login", async () => {
     mockFetch(() => apiError(401, "invalid_credentials", "Wrong username, password or PIN."));
     renderAt("/login");
-    await userEvent.type(screen.getByLabelText("Username"), "mayari.7k2f");
+    await userEvent.type(await screen.findByLabelText("Username"), "mayari.7k2f");
     await userEvent.type(screen.getByLabelText("Password or PIN"), "not-it-123");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Wrong username, password or PIN.");
@@ -47,7 +47,7 @@ describe("login page", () => {
 
   it("lets the PIN or password be shown while typing", async () => {
     renderAt("/login");
-    const secret = screen.getByLabelText("Password or PIN");
+    const secret = await screen.findByLabelText("Password or PIN");
     expect(secret).toHaveAttribute("type", "password");
     await userEvent.click(screen.getByRole("button", { name: "Show password or PIN" }));
     expect(secret).toHaveAttribute("type", "text");

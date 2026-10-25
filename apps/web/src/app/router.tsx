@@ -1,29 +1,39 @@
-import { useState, type ReactNode } from "react";
+import { lazy, useState, type ComponentType, type ReactNode } from "react";
 import { Navigate, Outlet, createBrowserRouter, type RouteObject } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { useSession } from "../auth/session";
-import { LoginPage } from "../features/auth/LoginPage";
-import { SampleBarcodesPage } from "../features/barcodes/SampleBarcodesPage";
-import { CreditsPage } from "../features/credits/CreditsPage";
-import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { LandingPage } from "../landing/LandingPage";
-import { CategoriesPage } from "../features/inventory/CategoriesPage";
-import { CountPage } from "../features/inventory/CountPage";
-import { EditProductPage, NewProductPage } from "../features/inventory/ProductForm";
-import { ProductsPage } from "../features/inventory/ProductsPage";
-import { RestockPage } from "../features/inventory/RestockPage";
-import { NotFoundPage } from "../features/notFound/NotFoundPage";
-import { PosScreen } from "../features/pos/PosScreen";
-import { ReportsPage } from "../features/reports/ReportsPage";
-import { ReviewPage } from "../features/review/ReviewPage";
-import { SalesPage } from "../features/sales/SalesPage";
-import { SettingsPage } from "../features/settings/SettingsPage";
-import { MyShiftPage } from "../features/shift/MyShiftPage";
-import { StaffPage } from "../features/staff/StaffPage";
-import { SukiLedgerPage } from "../features/suki/SukiLedgerPage";
-import { SukiListPage } from "../features/suki/SukiListPage";
-import { AppShell, type RouteHandle } from "./AppShell";
+import type { RouteHandle } from "./AppShell";
 import { Providers } from "./Providers";
+
+/**
+ * Every screen but the landing page is its own chunk, so a first visit downloads only the landing; the service
+ * worker still precaches them all for offline use.
+ */
+function lazily<K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) {
+  return lazy(() => load().then((module) => ({ default: module[name] })));
+}
+const AppShell = lazily(() => import("./AppShell"), "AppShell");
+const LoginPage = lazily(() => import("../features/auth/LoginPage"), "LoginPage");
+const SampleBarcodesPage = lazily(() => import("../features/barcodes/SampleBarcodesPage"), "SampleBarcodesPage");
+const CreditsPage = lazily(() => import("../features/credits/CreditsPage"), "CreditsPage");
+const DashboardPage = lazily(() => import("../features/dashboard/DashboardPage"), "DashboardPage");
+const CategoriesPage = lazily(() => import("../features/inventory/CategoriesPage"), "CategoriesPage");
+const CountPage = lazily(() => import("../features/inventory/CountPage"), "CountPage");
+const NewProductPage = lazily(() => import("../features/inventory/ProductForm"), "NewProductPage");
+const EditProductPage = lazily(() => import("../features/inventory/ProductForm"), "EditProductPage");
+const ProductsPage = lazily(() => import("../features/inventory/ProductsPage"), "ProductsPage");
+const RestockPage = lazily(() => import("../features/inventory/RestockPage"), "RestockPage");
+const NotFoundPage = lazily(() => import("../features/notFound/NotFoundPage"), "NotFoundPage");
+const PosScreen = lazily(() => import("../features/pos/PosScreen"), "PosScreen");
+const ReportsPage = lazily(() => import("../features/reports/ReportsPage"), "ReportsPage");
+const ReviewPage = lazily(() => import("../features/review/ReviewPage"), "ReviewPage");
+const SalesPage = lazily(() => import("../features/sales/SalesPage"), "SalesPage");
+const SettingsPage = lazily(() => import("../features/settings/SettingsPage"), "SettingsPage");
+const MyShiftPage = lazily(() => import("../features/shift/MyShiftPage"), "MyShiftPage");
+const StaffPage = lazily(() => import("../features/staff/StaffPage"), "StaffPage");
+const SukiLedgerPage = lazily(() => import("../features/suki/SukiLedgerPage"), "SukiLedgerPage");
+const SukiListPage = lazily(() => import("../features/suki/SukiListPage"), "SukiListPage");
 
 const page = (path: string, title: string, element: ReactNode): RouteObject => ({ path, element, handle: { title } satisfies RouteHandle });
 

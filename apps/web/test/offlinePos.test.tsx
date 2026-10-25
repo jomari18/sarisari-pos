@@ -173,7 +173,7 @@ describe("signing out and sessions with sales still queued (spec 7.2, 7.3)", () 
     serve({ "POST /api/auth/logout": () => new Response(null, { status: 204 }) });
     const router = openAt("/app/settings");
     const main = await screen.findByRole("main");
-    await userEvent.click(within(main).getByRole("button", { name: "Log out" }));
+    await userEvent.click(await within(main).findByRole("button", { name: "Log out" }));
     const warning = await screen.findByRole("dialog", { name: "3 sales not yet synced" });
     await userEvent.click(within(warning).getByRole("button", { name: "Stay signed in" }));
     expect(router.state.location.pathname).toBe("/app/settings");

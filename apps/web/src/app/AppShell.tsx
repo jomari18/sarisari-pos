@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { Loading } from "../components/LoadProblem";
 import { Navigate, Outlet, useMatches, type UIMatch } from "react-router";
 import { refreshSession } from "../api/client";
 import { deviceRecord, getNotice, getSession, restoreDeviceSession, useSession } from "../auth/session";
@@ -91,7 +92,9 @@ export function AppShell() {
           <div className="mb-4 lg:hidden">
             <DemoBanner />
           </div>
-          <Outlet />
+          <Suspense fallback={<Loading what="this screen" />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
       <MenuDrawer open={menuOpen} role={role} onClose={closeMenu} onSignOut={signOut} />

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Outlet, ScrollRestoration, type Location } from "react-router";
 
 // Every fresh page load is the history entry "default", so those are told apart by their path.
@@ -22,7 +22,9 @@ export function Providers() {
     <QueryClientProvider client={client}>
       {/* A new page opens at its top (Back returns to where it was); a page changing its own query string opts out. */}
       <ScrollRestoration getKey={scrollKey} />
-      <Outlet />
+      <Suspense fallback={<div aria-busy="true" className="min-h-dvh bg-bg" />}>
+        <Outlet />
+      </Suspense>
     </QueryClientProvider>
   );
 }
