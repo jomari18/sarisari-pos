@@ -27,6 +27,11 @@ jobs:
         env:
           SITE_URL: ${{ vars.SITE_URL }}
           CLEANUP_SECRET: ${{ secrets.CLEANUP_SECRET }}
+        # Each call deletes up to 20 stores; keep calling until one finds fewer, so a backlog clears too.
         run: |
-          curl --fail-with-body --silent --show-error --retry 3 --retry-delay 15 --retry-all-errors --max-time 30 \
-            -X POST -H "x-cleanup-secret: $CLEANUP_SECRET" "$SITE_URL/api/admin/cleanup"
+          for _ in $(seq 1 30); do
+            answer=$(curl --fail-with-body --silent --show-error --retry 3 --retry-delay 15 --retry-all-errors --max-time 30 \
+              -X POST -H "x-cleanup-secret: $CLEANUP_SECRET" "$SITE_URL/api/admin/cleanup") || { echo "$answer"; exit 1; }
+            echo "$answer"
+            if [ "$(echo "$answer" | jq '.deleted')" -lt 20 ]; then exit 0; fi
+          done

@@ -7,6 +7,20 @@ afterAll(() => db.$disconnect());
 beforeEach(() => resetDb(db));
 
 describe("database schema", () => {
+  // Review C1: deleting a store cascades through every foreign key, one query per deleted row. Without an index
+  // that starts with the key's column each of those queries scans the whole table, and cleanup grows with the
+  // number of stores until "Try the demo" passes the proxy's 26 s.
+  it("indexes every foreign key column, so cascades and per-suki or per-product reads never scan whole tables", async () => {
+    const unindexed = await db.$queryRawUnsafe<{ fk: string }[]>(`
+      SELECT c.conrelid::regclass || '.' || a.attname AS fk
+      FROM pg_constraint c
+      JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+      WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace
+        AND NOT EXISTS (SELECT 1 FROM pg_index i WHERE i.indrelid = c.conrelid AND i.indkey[0] = c.conkey[1])
+      ORDER BY 1`);
+    expect(unindexed.map((row) => row.fk)).toEqual([]);
+  });
+
   it("deletes all of a store's data when the store is deleted", async () => {
     const t = await seedStore(db);
     await db.sale.create({

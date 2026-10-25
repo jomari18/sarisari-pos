@@ -145,6 +145,7 @@ model Product {
   // PostgreSQL treats NULLs as distinct, so many products can have no barcode.
   @@unique([storeId, barcode])
   @@index([storeId, name])
+  @@index([categoryId])
 }
 
 model Customer {
@@ -195,6 +196,9 @@ model Sale {
 
   @@unique([storeId, receiptNo])
   @@index([storeId, soldAt])
+  @@index([cashierId])
+  @@index([customerId])
+  @@index([voidedById])
 }
 
 model SaleItem {
@@ -213,6 +217,7 @@ model SaleItem {
   lineTotalCentavos Int
 
   @@index([saleId])
+  @@index([productId])
 }
 
 model StockMovement {
@@ -234,6 +239,9 @@ model StockMovement {
   seq        Int            @default(autoincrement())
 
   @@index([storeId, productId, createdAt])
+  @@index([productId])
+  @@index([saleId])
+  @@index([userId])
 }
 
 model UtangEntry {
@@ -258,6 +266,9 @@ model UtangEntry {
   seq            Int            @default(autoincrement())
 
   @@index([storeId, customerId, createdAt])
+  @@index([customerId])
+  @@index([saleId])
+  @@index([userId])
 }
 
 model DemoQuota {
