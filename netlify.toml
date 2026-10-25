@@ -1,6 +1,6 @@
 # Netlify serves the web app and proxies /api to the API on Render (spec 4 and 14). PROXY_SIGNING_SECRET is set in
-# Netlify's site settings (runtime scope), never here; it signs every proxied request. <render-host> is the Render
-# service's hostname, filled in once the service exists.
+# Netlify's site settings (runtime scope), never here; it signs every proxied request. The API runs on Render at
+# zarizari-api.onrender.com.
 
 [build]
   # From the workspace root, so npm installs the shared package with the app.
@@ -9,12 +9,12 @@
 
 [build.environment]
   # The landing page wakes the sleeping API directly, without the proxy's 26-second limit.
-  VITE_API_WAKE_URL = "https://<render-host>/api/health"
+  VITE_API_WAKE_URL = "https://zarizari-api.onrender.com/api/health"
 
 # Every API call goes to Render through Netlify, which signs it so the API knows where it came from.
 [[redirects]]
   from = "/api/*"
-  to = "https://<render-host>/api/:splat"
+  to = "https://zarizari-api.onrender.com/api/:splat"
   status = 200
   force = true
   signed = "PROXY_SIGNING_SECRET"
@@ -28,7 +28,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://<render-host>; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://zarizari-api.onrender.com; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     Permissions-Policy = "camera=(self), microphone=(), geolocation=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Content-Type-Options = "nosniff"

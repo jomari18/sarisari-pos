@@ -42,7 +42,7 @@ describe("netlify.toml (spec 4 and 14)", () => {
   });
 
   it("wakes, proxies to and allows the same API host", () => {
-    // Read as text: until the service exists the host is the placeholder <render-host>, which URL() refuses.
+    // Read as text, so the check also works while the host is a placeholder that URL() would refuse.
     const host = /^(https:\/\/[^/]+)\/api\/:splat$/.exec(netlify.redirects.find((rule) => rule.from === "/api/*")!.to)?.[1];
     expect(host).toBeDefined();
     expect(netlify.build.environment?.VITE_API_WAKE_URL).toBe(`${host}/api/health`);

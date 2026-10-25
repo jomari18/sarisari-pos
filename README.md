@@ -8,7 +8,7 @@ ZariZari is a web app for a small Philippine neighborhood store. The bantay sell
 
 ## Live Demo
 
-**[Open ZariZari](https://<netlify-site>)** and press **Try the demo**. The demo store is yours for 24 hours: no sign-up. The free server sleeps when nobody uses it, so the first visit can take up to a minute to wake it.
+**[Open ZariZari](https://zarizari.netlify.app)** and press **Try the demo**. The demo store is yours for 24 hours: no sign-up. The free server sleeps when nobody uses it, so the first visit can take up to a minute to wake it.
 
 ## Highlights
 
@@ -33,7 +33,7 @@ ZariZari is a web app for a small Philippine neighborhood store. The bantay sell
 Browser (React PWA)
   │  static files, service worker ──────────────► Netlify CDN
   │  /api/*  (same origin) ──► Netlify signed proxy ──► Render: Docker container (Express API) ──► Neon PostgreSQL
-  └─ wake-up ping: GET https://<render-host>/api/health (direct, CORS for the site only)
+  └─ wake-up ping: GET https://zarizari-api.onrender.com/api/health (direct, CORS for the site only)
 ```
 
 The full design is in [docs/superpowers/specs/2026-10-21-sarisari-pos-design.md](docs/superpowers/specs/2026-10-21-sarisari-pos-design.md).
